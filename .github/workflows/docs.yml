@@ -1,0 +1,71 @@
+# Dogfood: build THIS template's own documentation site and deploy it to GitHub Pages.
+#
+# The docs sources live under template/docs/ as Jinja templates, so they can't be built
+# directly. Instead we generate a throwaway project FROM this template (using the repo's own
+# GitHub identity), build that project's docs, and publish the result. This gives PyMaxQ a real
+# documentation site AND doubles as an end-to-end integration test: every push proves the
+# template still generates, tests, and builds.
+#
+# SETUP: enable Pages once under Settings -> Pages -> Source: "GitHub Actions".
+name: Docs (dogfood)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Generate a project from this template (dogfood)
+        run: |
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          name=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          uvx copier copy --defaults --vcs-ref HEAD \
+            --data project_name="$name" \
+            --data description="${{ github.event.repository.description || 'A max quality Python project' }}" \
+            --data author="$owner" \
+            --data email="noreply@github.com" \
+            --data group="$owner" \
+            --data ci_platform=github \
+            . .dogfood-site
+      - name: Build the documentation
+        working-directory: .dogfood-site
+        run: |
+          uv sync --all-extras --dev
+          uv run poe test 4
+          uv run poe export-test-artifacts
+          uv run poe docs
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .dogfood-site/public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

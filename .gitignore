@@ -24,6 +24,7 @@ htmlcov/
 # Docs build output
 public/
 site/
+.dogfood-site/   # scratch project the docs workflow generates from this template
 
 # Local tooling / editor
 .claude/settings.local.json

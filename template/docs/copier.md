@@ -65,3 +65,9 @@ the template":
 The template is itself tested: `tests/test_generation.py` generates throwaway projects and
 asserts they are structurally correct (package renamed, no unrendered Jinja, the right CI
 files present). Run them with `uv run --with copier --with pytest pytest tests/`.
+
+The template even **documents itself by dogfooding**: its own `.github/workflows/docs.yml`
+generates a project *from the template* (with the repo's GitHub identity), builds that
+project's documentation, and deploys it to GitHub Pages. So the very page you are reading was
+produced by the same `copier copy` → `poe docs` path a consumer uses — which means a broken
+template can't publish green docs.

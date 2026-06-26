@@ -61,3 +61,10 @@ Run the template's own tests with:
 ```bash
 uv run --with copier --with pytest pytest tests/
 ```
+
+## Documentation
+
+The template's documentation is **dogfooded**: `.github/workflows/docs.yml` generates a project
+from this template, builds its docs, and deploys them to GitHub Pages — so the published site is
+produced by the exact `copier copy` → `poe docs` path a consumer uses, and a broken template
+can't ship green docs. Enable it once under **Settings → Pages → Source: GitHub Actions**.
