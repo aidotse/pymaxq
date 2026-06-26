@@ -254,7 +254,9 @@ help = "Render CHANGELOG.md from conventional commits."
 # Use 'git ls-remote' to get the authoritative list of tags directly from the remote.
 # This is non-destructive and ignores any potentially stale or incorrect local tags.
 [tool.poe.tasks.get-latest-tag]
-shell = "git ls-remote --tags --refs origin | awk '{print $2}' | sed 's:^refs/tags/::' | sort -V | tail -n 1 || echo '0.0.0'"
+# `grep .` makes the `|| echo` fallback fire on empty input (no remote / no tags yet),
+# otherwise the `||` would bind to `tail`, which succeeds on empty input and returns "".
+shell = "git ls-remote --tags --refs origin 2>/dev/null | awk '{print $2}' | sed 's:^refs/tags/::' | sort -V | tail -n 1 | grep . || echo '0.0.0'"
 help = "Fetch the highest version tag from the remote registry."
 executor = "simple"
 
