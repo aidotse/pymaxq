@@ -1,0 +1,54 @@
+# GitHub quality gate. Mirrors the GitLab pipeline's test stage.
+# Logic lives in poe tasks (pyproject.toml); this file is GitHub-specific glue.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0      # hatch-vcs / commitizen need full history + tags
+          fetch-tags: true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras --dev
+      - name: Lint, format & type-check
+        run: uv run poe lint
+      - name: Dependency hygiene
+        run: uv run poe deps-check
+      - name: Security audit
+        run: uv run poe audit
+        continue-on-error: true   # surface advisories without hard-blocking
+      - name: Tests + coverage
+        run: uv run poe test 4
+
+  test-matrix:
+    # Correctness across all supported Python versions. nox (noxfile.py) is the single
+    # source of truth for the version set, so CI never duplicates it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Run the test matrix
+        run: uv run poe test-all

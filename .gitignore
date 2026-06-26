@@ -1,0 +1,31 @@
+# Gitignore for the PyMaxQ *template repository* itself.
+# (The generated-project gitignore lives at template/.gitignore.)
+
+# uv / virtualenvs
+.venv/
+.uv-cache/
+
+# Python bytecode / build
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.egg-info/
+
+# Test / lint / type caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+
+# Docs build output
+public/
+site/
+
+# Local tooling / editor
+.claude/settings.local.json
+.DS_Store
+*.swp

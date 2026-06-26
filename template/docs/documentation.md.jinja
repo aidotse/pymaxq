@@ -1,0 +1,31 @@
+# Documentation
+
+Good documentation is part of a quality project, so this template ships a documentation site built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) and configured in `mkdocs.yaml`. You write pages as Markdown under `docs/`, and `mkdocs build` renders them into a static site. The navigation is defined under the `nav:` key in `mkdocs.yaml`, so when you add a page, add it there too.
+
+## API reference from docstrings (mkdocstrings)
+
+In addition to hand-written pages, the [mkdocstrings](https://mkdocstrings.github.io/) plugin generates API documentation directly from your source code's Google-style docstrings. The [API Reference](reference.md) page is as simple as a one-line directive per module:
+
+```markdown
+::: your_package.your_module
+```
+
+so your reference docs stay in sync with the code for free — as long as you keep writing docstrings, which [ruff](linting.md) helps enforce.
+
+## Versioning the docs (mike)
+
+The documentation is versioned using [mike](https://github.com/jimporter/mike), which you can think of as an extra step after `mkdocs build` that re-organizes the build output so that you can access the documentation for each released version of your code, with `latest` as an alias for the most recent release.
+
+## Building and deploying
+
+Build the site locally with:
+
+```bash
+uv run poe docs
+```
+
+(run `uv run poe test` first, since the site embeds the coverage and test-result artifacts under `exported/`).
+
+Deployment is automated as part of a release: when a new version is tagged on the default branch, the documentation for that version is built and published. See [CI/CD](ci.md) for the pipeline details. {% if ci_platform in ['gitlab', 'both'] %}On GitLab, the pipeline deploys the built site to GitLab Pages via the reserved `pages` job. {% endif %}{% if ci_platform in ['github', 'both'] %}On GitHub, mike pushes the versioned site to the `gh-pages` branch, which GitHub Pages serves. {% endif %}
+
+Your documentation is then available at [`{{ docs_url }}`]({{ docs_url }}).

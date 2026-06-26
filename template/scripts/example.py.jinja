@@ -1,0 +1,20 @@
+"""Example CLI / function calling script."""
+
+import sys
+
+import hydra
+from hydra.utils import instantiate
+from loguru import logger
+from omegaconf import DictConfig
+
+logger.add(sys.stdout, format="{time} {level} {message}", filter="example", level="INFO")
+
+
+@hydra.main(version_base=None, config_path="../{{ package_name }}/configs", config_name="benchmark")
+def main(config: DictConfig) -> None:
+    benchmark = instantiate(config, _convert_="all")
+    benchmark.run()
+
+
+if __name__ == "__main__":
+    main()  # pylint: disable=no-value-for-parameter

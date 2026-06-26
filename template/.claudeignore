@@ -1,0 +1,126 @@
+# .claudeignore — files/dirs Claude Code should not read or index.
+# Goal: keep generated artifacts, dependencies, caches, and large binaries
+# out of context. Tailored for this uv-managed Python project and the dev
+# tooling declared in pyproject.toml (pytest, mypy, ruff, mkdocs/mike,
+# coverage, genbadge). Mirrors .gitignore where useful, plus heavyweight
+# files that ARE tracked but are noise to read (e.g. uv.lock).
+
+# ── uv / virtual environments ──────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.uv-cache/
+# uv lockfile: tracked in git, but 1MB+ of resolver output — not worth reading.
+uv.lock
+
+# ── Python bytecode / build / packaging ────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+sdist/
+wheels/
+share/python-wheels/
+*.egg
+*.egg-info/
+.installed.cfg
+MANIFEST
+*.manifest
+*.spec
+
+# ── Test / type / lint / coverage caches ───────────────────────────────
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pytype/
+.pyre/
+.hypothesis/
+.tox/
+.nox/
+.cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+cover/
+*.cover
+*.py,cover
+nosetests.xml
+
+# ── Docs build & generated artifacts (mkdocs / mike / genbadge / pytest) ─
+site/
+public/
+/site
+/public
+docs/_build/
+docs/exported/   # genbadge svgs, pytest html/xml, coverage html — all generated
+
+# ── Hydra run outputs ──────────────────────────────────────────────────
+outputs/
+multirun/
+
+# ── Tooling caches ─────────────────────────────────────────────────────
+.serena/          # serena MCP cache/memories (accessed via tools, not files)
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+
+# ── JS / Node (kept generic per request, even if not currently used) ────
+node_modules/
+bower_components/
+.npm/
+.pnp.*
+*.tsbuildinfo
+
+# ── Large / binary / data artifacts (low value, high token cost) ────────
+*.so
+*.dylib
+*.dll
+*.a
+*.o
+*.bin
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.safetensors
+*.h5
+*.npy
+*.npz
+*.parquet
+*.feather
+*.arrow
+*.pkl
+*.pickle
+*.joblib
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+*.7z
+*.db
+*.sqlite3
+*.sqlite3-journal
+
+# ── Logs & local env files ─────────────────────────────────────────────
+*.log
+.env
+.env.*
+local_settings.py
+
+# ── Editor / OS cruft ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

@@ -1,0 +1,345 @@
+# GitLab CI/CD pipeline.
+#
+# The *logic* lives in poe tasks (see pyproject.toml); this file is the GitLab-specific
+# glue: triggers, auth, container/package registries, and Pages deployment. The same
+# concept is implemented for GitHub under .github/workflows/.
+#
+# CONCEPT (identical across platforms):
+#   - Merge request        -> quality gate: lint, deps-check, audit, tests, version matrix.
+#   - Push to main (merge)  -> `poe bump` (commitizen): if there are release-worthy commits,
+#                              it writes CHANGELOG + tag, and publishing runs as a CONTINUATION
+#                              of the same pipeline (package + image + docs + release).
+#
+# Why a continuation instead of a tag-triggered pipeline: the bump commit carries
+# `[skip ci]` (so it can't re-trigger / re-bump), and `[skip ci]` would also suppress a
+# tag pipeline -- so we never rely on the tag push to start publishing.
+#
+# REQUIRED SETUP (see docs/getting-started.md):
+#   - CI_REPO_ACCESS: project access token (read+write repo, developer role) able to push
+#     to the protected default branch. Add as a masked, UNPROTECTED CI/CD variable.
+#   - GIT_SSL_CAINFO: File-type variable with any CA cert needed to reach GitLab.
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'push' && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == 'web'
+
+stages:
+  - .pre
+  - setup
+  - test
+  - version
+  - release
+
+variables:
+  HTTPS_REMOTE: https://oauth2:$CI_REPO_ACCESS@$CI_SERVER_HOST/$CI_PROJECT_PATH.git
+  GIT_DEPTH: 0
+  CUDA_VISIBLE_DEVICES: ""
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+  UV_LINK_MODE: "copy"
+  UV_COMPILE_BYTECODE: "0"
+
+# Run quality + release jobs on MRs and on pushes to the default branch.
+.rules_mr_and_main: &rules_mr_and_main
+  - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  - if: $CI_PIPELINE_SOURCE == 'web'
+  - if: $CI_PIPELINE_SOURCE == 'push' && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Release jobs run only on pushes to the default branch (i.e. after a merge).
+.rules_main_only: &rules_main_only
+  - if: $CI_PIPELINE_SOURCE == 'push' && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ==========================================
+#  MAINTENANCE
+# ==========================================
+
+aggressive-docker-prune:
+  stage: .pre
+  tags:
+    - shell
+  rules:
+    - when: manual
+  allow_failure: true
+  script:
+    # Delete lingering Buildx instances created by `docker buildx create`.
+    - echo "Removing old Buildx builders..."
+    - for builder in $(docker buildx ls | awk '/docker-container/ {print $1}'); do docker buildx rm -f $builder; done || true
+    - echo "Pruning system, images, containers, and volumes..."
+    - docker system prune -a -f --volumes
+    - echo "Pruning BuildKit internal caches..."
+    - docker builder prune -a -f
+    - df -h /var/lib/docker || df -h /
+
+# ==========================================
+#  SETUP & SHARED TEMPLATES
+# ==========================================
+
+# Requires GIT_SSL_CAINFO to be set in CI/CD Settings > Variables.
+build-ci-image:
+  stage: .pre
+  tags:
+    - shell
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" $CI_REGISTRY
+    - |
+      cat <<EOF > buildkitd.toml
+      [registry."$CI_SERVER_HOST:5050"]
+        ca=["${GIT_SSL_CAINFO}"]
+      EOF
+    - export BUILDER_NAME="builder-$CI_JOB_ID"
+    - docker buildx create --name $BUILDER_NAME --use --driver docker-container --config buildkitd.toml
+    - docker buildx inspect --bootstrap
+  script:
+    - echo "Building custom CI image from docker/ci.base.Dockerfile..."
+    - |
+      docker buildx build --push \
+        --provenance=false \
+        --secret id=internal_ca,src="${GIT_SSL_CAINFO}" \
+        --cache-from type=registry,ref="$CI_REGISTRY_IMAGE/ci-image:buildcache" \
+        --cache-to type=registry,ref="$CI_REGISTRY_IMAGE/ci-image:buildcache",mode=max \
+        -f docker/ci.base.Dockerfile \
+        -t "$CI_REGISTRY_IMAGE/ci-image:latest" .
+  after_script:
+    - docker buildx rm -f "builder-$CI_JOB_ID" || true
+    - docker image prune -f
+    - docker builder prune -f
+  rules: *rules_mr_and_main
+
+.tools_setup:
+  image:
+    name: $CI_REGISTRY_IMAGE/ci-image:latest
+    pull_policy: always
+  before_script:
+    - git config --global user.email "${GITLAB_USER_EMAIL}"
+    - git config --global user.name "${GITLAB_USER_NAME:-GitLab CI}"
+    - uv sync --frozen
+    - source .venv/bin/activate
+
+.cache_producer:
+  extends: .tools_setup
+  cache:
+    key:
+      files:
+        - uv.lock
+    paths:
+      - .venv
+      - .uv-cache
+    policy: pull-push
+  rules: *rules_mr_and_main
+
+.cache_consumer:
+  extends: .tools_setup
+  cache:
+    key:
+      files:
+        - uv.lock
+    paths:
+      - .venv
+      - .uv-cache
+    policy: pull
+
+setup:
+  extends: .cache_producer
+  stage: setup
+  needs: ["build-ci-image"]
+  script:
+    - echo "Syncing dependencies to build the cache..."
+    - uv sync --all-extras --dev
+
+# ==========================================
+#  QUALITY GATE  (MRs and pushes to main)
+# ==========================================
+
+lint:
+  extends: .cache_consumer
+  stage: test
+  needs: ["setup"]
+  rules: *rules_mr_and_main
+  script:
+    - uv run poe lint
+
+deps-check:
+  extends: .cache_consumer
+  stage: test
+  needs: ["setup"]
+  rules: *rules_mr_and_main
+  script:
+    - uv run poe deps-check
+
+audit:
+  extends: .cache_consumer
+  stage: test
+  needs: ["setup"]
+  rules: *rules_mr_and_main
+  # Surfaces advisories without hard-blocking releases; review the job output.
+  allow_failure: true
+  script:
+    - uv run poe audit
+
+# Canonical single-version run: produces coverage + the HTML/XML/badge artifacts that
+# feed the documentation site.
+run-tests:
+  extends: .cache_consumer
+  stage: test
+  needs: ["setup"]
+  rules: *rules_mr_and_main
+  script:
+    - uv run poe test 4
+    - uv run poe export-test-artifacts --directory docs/exported
+  artifacts:
+    paths:
+      - docs/exported/
+    expire_in: 1 day
+
+# Correctness across all supported Python versions (nox reads noxfile.py).
+test-matrix:
+  extends: .cache_consumer
+  stage: test
+  needs: ["setup"]
+  rules: *rules_mr_and_main
+  script:
+    - uv run poe test-all
+
+# ==========================================
+#  VERSION  (push to main only)
+# ==========================================
+
+# Compute the next version from conventional commits. If there is nothing to release the
+# job succeeds and sets BUMPED=false so downstream publish jobs no-op.
+version-bump:
+  extends: .cache_consumer
+  stage: version
+  needs: ["run-tests"]
+  rules: *rules_main_only
+  script:
+    - git remote set-url origin "$HTTPS_REMOTE"
+    - |
+      set +e
+      uv run cz bump --yes
+      rc=$?
+      set -e
+      if [ $rc -eq 0 ]; then
+        BUMPED=true
+      elif [ $rc -eq 3 ] || [ $rc -eq 21 ]; then
+        echo "No release-worthy commits since the last tag (cz exit $rc); skipping release."
+        BUMPED=false
+      else
+        echo "cz bump failed unexpectedly (exit $rc)."
+        exit $rc
+      fi
+      echo "BUMPED=$BUMPED" >> bump.env
+    - |
+      if [ "$BUMPED" = "true" ]; then
+        NEW_TAG=$(git describe --tags --abbrev=0)
+        echo "NEW_TAG=$NEW_TAG" >> bump.env
+        echo "NEW_VERSION=${NEW_TAG#v}" >> bump.env
+        echo "Pushing bump commit + tag $NEW_TAG ..."
+        git push "$HTTPS_REMOTE" "HEAD:$CI_DEFAULT_BRANCH"
+        git push "$HTTPS_REMOTE" "$NEW_TAG"
+      fi
+  artifacts:
+    reports:
+      dotenv: bump.env
+
+# ==========================================
+#  RELEASE  (continuation; only when a bump happened)
+# ==========================================
+
+publish-package:
+  extends: .cache_consumer
+  stage: release
+  needs: ["version-bump"]
+  rules: *rules_main_only
+  script:
+    - '[ "$BUMPED" = "true" ] || { echo "Nothing to release."; exit 0; }'
+    - echo "Building and publishing $NEW_VERSION..."
+    - uv build
+    - |
+      uv publish dist/* \
+        --publish-url "https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/packages/pypi" \
+        --username "gitlab-ci-token" \
+        --password "${CI_JOB_TOKEN}"
+
+build-and-push-image:
+  stage: release
+  tags:
+    - shell
+  needs: ["version-bump"]
+  rules: *rules_main_only
+  script:
+    - '[ "$BUMPED" = "true" ] || { echo "Nothing to release."; exit 0; }'
+    - unset DOCKER_HOST
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" $CI_REGISTRY
+    - |
+      cat <<EOF > buildkitd.toml
+      [registry."$CI_SERVER_HOST:5050"]
+        ca=["${GIT_SSL_CAINFO}"]
+      EOF
+    - echo "Building Docker image for version $NEW_VERSION..."
+    - export BUILDER_NAME="builder-$CI_JOB_ID"
+    - docker buildx create --name $BUILDER_NAME --use --driver docker-container --config buildkitd.toml
+    - docker buildx inspect --bootstrap
+    # NOTE: for private dependencies, add uv index build secrets here (see docker/Dockerfile).
+    - |
+      docker buildx build --push \
+        --provenance=false \
+        --secret id=internal_ca,src="${GIT_SSL_CAINFO}" \
+        --build-arg VERSION="$NEW_VERSION" \
+        --cache-from type=registry,ref="$CI_REGISTRY_IMAGE:buildcache" \
+        --cache-to type=registry,ref="$CI_REGISTRY_IMAGE:buildcache",mode=max \
+        -f docker/Dockerfile \
+        -t "$CI_REGISTRY_IMAGE:$NEW_VERSION" \
+        -t "$CI_REGISTRY_IMAGE:latest" .
+  after_script:
+    - docker buildx rm -f "builder-$CI_JOB_ID" || true
+    - docker image prune -f
+    - docker builder prune -f
+
+# Build the versioned docs and stage them into public/ for GitLab Pages.
+build-docs:
+  extends: .cache_consumer
+  stage: release
+  needs: ["version-bump", "run-tests"]
+  rules: *rules_main_only
+  script:
+    - '[ "$BUMPED" = "true" ] || { echo "Nothing to release."; exit 0; }'
+    - git fetch origin
+    - uv run poe docs --verbose
+    - uv run poe docs-version --prefix public --branch pages
+    - git checkout pages
+  artifacts:
+    paths:
+      - public
+
+# GitLab Pages deploy job (name is a reserved keyword).
+pages:
+  stage: release
+  needs: ["build-docs"]
+  rules: *rules_main_only
+  script:
+    - '[ "$BUMPED" = "true" ] || { echo "Nothing to release."; exit 0; }'
+    - echo "Deploying to GitLab Pages..."
+  artifacts:
+    paths:
+      - public
+
+# Create the GitLab Release entry for the new tag. Done imperatively with `glab` (not the
+# declarative `release:` keyword) so it can be skipped on no-release pushes -- the keyword
+# would otherwise fire with an empty tag and fail.
+gitlab-release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/cli:latest
+  needs: ["version-bump"]
+  rules: *rules_main_only
+  variables:
+    GITLAB_HOST: "https://$CI_SERVER_HOST"
+    GITLAB_TOKEN: "$CI_REPO_ACCESS"
+  before_script:
+    - cp "$GIT_SSL_CAINFO" /usr/local/share/ca-certificates/internal-ca.crt 2>/dev/null || true
+    - apk add --no-cache ca-certificates >/dev/null 2>&1 || true
+    - update-ca-certificates >/dev/null 2>&1 || true
+  script:
+    - '[ "$BUMPED" = "true" ] || { echo "Nothing to release."; exit 0; }'
+    - echo "Creating GitLab release for $NEW_TAG..."
+    - glab release create "$NEW_TAG" --ref "$CI_DEFAULT_BRANCH" --notes "Automated release $NEW_TAG. See CHANGELOG.md for details."

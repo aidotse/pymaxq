@@ -1,0 +1,149 @@
+# GitHub release pipeline. Mirrors the GitLab version + release stages.
+#
+# CONCEPT (same as GitLab): on push to main, `cz bump` computes the next version from
+# conventional commits. If there is something to release it writes CHANGELOG + tag, and
+# publish/docs/release run as a CONTINUATION (via `needs:`) in this same run -- never via
+# a tag-triggered workflow (a GITHUB_TOKEN-pushed tag would not re-trigger anyway, and the
+# bump commit carries [skip ci]).
+#
+# REQUIRED SETUP (see docs/getting-started.md):
+#   - Allow the workflow to push to the protected `main` branch (branch-protection bypass
+#     for github-actions[bot], or a PAT in `secrets.RELEASE_TOKEN` used below if set).
+#   - Enable GitHub Pages with source = `gh-pages` branch.
+#   - Publishing: by default uses PyPI OIDC Trusted Publishing (configure a trusted
+#     publisher on PyPI; no secrets needed). To publish to a private index instead, set
+#     repo variable PUBLISH_TARGET=private-index and secrets PRIVATE_INDEX_{URL,USERNAME,PASSWORD}.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # push the bump commit + tag
+    outputs:
+      bumped: ${{ steps.cz.outputs.bumped }}
+      version: ${{ steps.cz.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras --dev
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Bump version from conventional commits
+        id: cz
+        run: |
+          set +e
+          uv run cz bump --yes
+          rc=$?
+          set -e
+          if [ $rc -eq 0 ]; then
+            NEW_TAG=$(git describe --tags --abbrev=0)
+            echo "bumped=true" >> "$GITHUB_OUTPUT"
+            echo "version=${NEW_TAG#v}" >> "$GITHUB_OUTPUT"
+            echo "Pushing bump commit + tag $NEW_TAG ..."
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+            git push origin "$NEW_TAG"
+          elif [ $rc -eq 3 ] || [ $rc -eq 21 ]; then
+            echo "No release-worthy commits since the last tag (cz exit $rc); skipping release."
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "cz bump failed unexpectedly (exit $rc)."
+            exit $rc
+          fi
+
+  publish:
+    needs: bump
+    if: needs.bump.outputs.bumped == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write       # PyPI OIDC Trusted Publishing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: "v${{ needs.bump.outputs.version }}"
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Build
+        run: uv build
+      - name: Publish to PyPI (OIDC Trusted Publishing)
+        if: vars.PUBLISH_TARGET == '' || vars.PUBLISH_TARGET == 'pypi-oidc'
+        run: uv publish
+      - name: Publish to a private index (token auth)
+        if: vars.PUBLISH_TARGET == 'private-index'
+        env:
+          UV_PUBLISH_USERNAME: ${{ secrets.PRIVATE_INDEX_USERNAME }}
+          UV_PUBLISH_PASSWORD: ${{ secrets.PRIVATE_INDEX_PASSWORD }}
+        run: uv publish --publish-url "${{ vars.PRIVATE_INDEX_URL }}"
+
+  docs:
+    needs: bump
+    if: needs.bump.outputs.bumped == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # mike pushes to the gh-pages branch
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras --dev
+      - name: Build test artifacts (badges + coverage embedded in docs)
+        run: |
+          uv run poe test 4
+          uv run poe export-test-artifacts
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Build & deploy versioned docs
+        run: |
+          git fetch origin gh-pages 2>/dev/null || true
+          uv run poe docs --verbose
+          uv run poe docs-version --remote origin --branch gh-pages --push
+
+  github-release:
+    needs: [bump, publish]
+    if: needs.bump.outputs.bumped == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # create the GitHub Release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ needs.bump.outputs.version }}" \
+            --title "v${{ needs.bump.outputs.version }}" \
+            --notes "Automated release. See CHANGELOG.md for details."

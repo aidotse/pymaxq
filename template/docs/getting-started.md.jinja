@@ -1,0 +1,128 @@
+# Getting Started
+
+Welcome! This guide walks through the core design principles behind this repo. It is inspired by best practices in the software engineering community, and is intended to be general enough by making minimal assumptions on *what* you will be coding, focusing rather on *how* to make this process efficient. Of course there are many tools out there that go much further than what is used here; this repo gathers in essence the key ones, aiming to be as much as infrastructure agnostic as possible.
+
+The purpose of this repo is to help you design and manage better code faster and better, not to hinder you in the software engineering process. Keep in mind that the tools here, like anything else, have learning curves and may seem like hindrances at first, but will undoubtedly show their value once you get an idea of what is going on and why.
+
+## Who is this for?
+
+This guide and repo is meant for anyone that values code quality in their work. If you have a reason to start a new Python project and want to do this in a principled way, this is a good starting point. This guide is written at a fairly high level, but with an implicit assumption that you have some basic coding experience already, i.e. know how to use `git` and have an otherwise high level understanding of how Python projects are structured and work.
+
+## Toolset summary
+
+This is an executive summary of the collection of tools / concepts used in this repository:
+
+- Build system: [pyproject.toml](https://peps.python.org/pep-0518/)
+- Dependency manager: [uv](https://docs.astral.sh/uv/)
+- Action runner: [poethepoet](https://github.com/nat-n/poethepoet) — run `uv run poe` to list tasks
+- Linting & formatting: [ruff](https://github.com/astral-sh/ruff) (replaces black, isort, and pyupgrade)
+- Static type checking: [mypy](https://mypy-lang.org/)
+- Unit testing and coverage: [pytest](https://docs.pytest.org/en/stable/) and [coverage](https://coverage.readthedocs.io/en/latest/index.html)
+- Multi-version testing: [nox](https://nox.thea.codes/) across Python 3.10–3.13
+- Dependency hygiene: [deptry](https://github.com/fpgmaas/deptry) (unused / missing / misplaced deps)
+- Security auditing: `uv audit` (known-vulnerability scan of the lockfile)
+- Dependency updates: [Renovate](https://docs.renovatebot.com/) (`renovate.json`)
+- Documentation: [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) with API docs via [mkdocstrings](https://mkdocstrings.github.io/), versioned with [mike](https://github.com/jimporter/mike)
+- Gated commits: [pre-commit](https://pre-commit.com/)
+- Versioning: [Conventional Commits](https://www.conventionalcommits.org/) driven by [commitizen](https://commitizen-tools.github.io/commitizen/), applied to [git tags](https://git-scm.com/book/en/v2/Git-Basics-Tagging) (read at build time by hatch-vcs)
+- Source code parametrization: [hydra](https://hydra.cc/)
+
+{% if ci_platform in ['gitlab', 'both'] -%}
+CI/CD runs in the [GitLab ecosystem](https://docs.gitlab.com/ee/ci/); documentation is hosted with [GitLab Pages](https://docs.gitlab.com/ee/user/project/pages/).
+{% endif -%}
+{% if ci_platform in ['github', 'both'] -%}
+CI/CD runs via [GitHub Actions](https://docs.github.com/actions); documentation is hosted with [GitHub Pages](https://docs.github.com/pages).
+{% endif %}
+
+## Setup / installation
+
+### 1. Install `uv`
+
+If you don't have `uv` installed locally, install it via curl (macOS/Linux):
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+*(For Windows or other methods, see the [official uv docs](https://docs.astral.sh/uv/getting-started/installation/)).*
+
+### 2. Sync the environment
+
+```bash
+uv sync
+```
+
+This creates the `.venv` and installs the project (editable) plus the `dev` group. Optional
+agent/AI tooling lives behind an extra: `uv sync --extra agent`. To reset, delete `.venv`
+and run `uv sync` again.
+
+### 3. Test your installation
+
+Run the default unit tests with `uv run poe test`, or the example Hydra script with
+`uv run scripts/example.py`. See all available tasks with `uv run poe`.
+
+### 4. Install the git hooks
+
+```bash
+uv run pre-commit install
+```
+
+This installs both the `pre-commit` hooks (ruff, mypy, file hygiene) and the `commit-msg`
+hook that validates your commit messages (see below).
+
+## Conventional commits & versioning
+
+Versioning is **automatic** and driven by your commit messages, so there are no manual
+version bumps. Write commits in the [Conventional Commits](https://www.conventionalcommits.org/)
+format:
+
+- `fix: ...` → patch release (e.g. `0.1.0` → `0.1.1`)
+- `feat: ...` → minor release (e.g. `0.1.1` → `0.2.0`)
+- a `feat!: ...` or a `BREAKING CHANGE:` footer → major release (while `< 1.0`, this is a minor bump)
+
+The `commit-msg` hook rejects non-conforming messages locally. On merge to the default
+branch, CI runs `uv run poe bump`: commitizen computes the next version from the commits
+since the last tag, updates `CHANGELOG.md`, creates the git tag, and publishing follows.
+If there are no release-worthy commits, nothing is released.
+
+You can preview the next changelog locally with `uv run poe changelog`.
+
+## Repository settings
+
+{% if ci_platform in ['gitlab', 'both'] -%}
+### GitLab
+
+Configure these under `Settings` at your repo URL:
+
+- **General → Badges** (optional): add a `Pipeline` badge with link
+  `https://gitlab.mgmt.ai.se/%{project_path}` and image
+  `https://gitlab.mgmt.ai.se/%{project_path}/badges/%{default_branch}/pipeline.svg`.
+- **Access Tokens**: create a project access token named `CI_REPO_ACCESS` with
+  `read_repository` + `write_repository` scopes and a `Maintainer` role (it must be able to
+  push the version bump commit + tag to the protected default branch).
+- **CI/CD → Variables**:
+    - Add `CI_REPO_ACCESS` (the token value) as **masked** and **not protected**.
+    - Add `GIT_SSL_CAINFO` (type **File**) with any SSL certificates required to reach GitLab.
+- **Repository → Protected branches**: protect the default branch, but allow `CI_REPO_ACCESS`
+  (or Maintainers) to push so the automated bump can land. Pages is published by the pipeline.
+- **Merge requests → Merge checks**: enable `Pipelines must succeed` and
+  `All threads must be resolved`.
+{% endif -%}
+{% if ci_platform in ['github', 'both'] -%}
+### GitHub
+
+- **Settings → Actions → General → Workflow permissions**: set **Read and write
+  permissions** so the release workflow can push the bump commit/tag and create releases.
+- **Branch protection** on `main`: allow the release workflow to push. Either add a bypass
+  for `github-actions[bot]`, or create a fine-grained PAT with `contents: write`, store it
+  as the `RELEASE_TOKEN` secret (the workflow prefers it over `GITHUB_TOKEN`), and allow it
+  to bypass protection.
+- **Pages**: set the source to the `gh-pages` branch (mike deploys versioned docs there).
+- **Publishing the package**:
+    - *Default — PyPI via OIDC Trusted Publishing*: configure a
+      [trusted publisher](https://docs.pypi.org/trusted-publishers/) on PyPI for this repo's
+      `release.yml`. No secrets required.
+    - *Private index instead*: set repo **variable** `PUBLISH_TARGET=private-index` and
+      **variable** `PRIVATE_INDEX_URL`, plus secrets `PRIVATE_INDEX_USERNAME` /
+      `PRIVATE_INDEX_PASSWORD`.
+{% endif %}

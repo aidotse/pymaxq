@@ -1,0 +1,9 @@
+# Example answers for non-interactive generation, e.g.:
+#   copier copy --defaults --data-file tests/answers.yml . /tmp/out
+# Reproduces the upstream PyMaxQ project values.
+project_name: pymaxq
+package_name: pymaxq
+description: A template for max quality Python projects
+author: Mauricio Munoz
+email: mauricio.munoz@ai.se
+group: dev-tools

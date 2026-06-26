@@ -1,0 +1,19 @@
+# Unit Testing and Coverage
+
+This one is pretty straightforward, we recommend [pytest](https://docs.pytest.org/en/stable/) as a testing framework, and use [coverage](https://coverage.readthedocs.io/en/latest/index.html), as well as a [coverage plugin for pytest](https://pypi.org/project/pytest-cov/) to generate coverage (statement / branch) reports every time the tests are run.
+
+Note that in the coverage settings in the `pyproject.toml`, you can specify a coverage threshold under which the tests will fail. This is to encourage a thorough and organic testing strategy. Don't test as an afterthought, but rather consider this as a non-negotiable part of the development cost.
+
+When building the documentation, both the latest testing and coverage reports are used and uploaded as documentation artifacts visible to anyone.
+
+Your coverage report will be available [here]({{ docs_url }}/latest/exported/coverage/) and your test results will be available [here]({{ docs_url }}/latest/exported/pytest.html?sort=result)
+
+## Testing across Python versions (nox)
+
+`uv run poe test` runs the suite on a single interpreter and is the canonical run that produces the coverage report and the badges/artifacts embedded in the docs. To make sure your code works across *all* supported Python versions, this project also uses [nox](https://nox.thea.codes/):
+
+```bash
+uv run poe test-all      # = nox -s tests
+```
+
+`noxfile.py` declares the supported versions (3.10–3.13) and is the single source of truth for that list — CI runs the same `nox` session rather than duplicating the version matrix. Each session creates an isolated environment (using uv as the backend) and runs the suite without the coverage/artifact options, so the matrix is a fast pass/fail correctness check while `poe test` handles coverage.

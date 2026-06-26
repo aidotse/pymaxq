@@ -1,0 +1,29 @@
+"""Test file for {{ package_name }}/sorting.py."""
+
+import random
+
+import pytest
+
+from {{ package_name }}.sorting import BubbleSort, InsertionSort, MergeSort, QuickSort, SortingAlgo, SortingBenchmark
+
+
+@pytest.mark.parametrize("algo", [BubbleSort, InsertionSort, MergeSort, QuickSort])
+@pytest.mark.parametrize("array_size", [10, 100, 1000])
+@pytest.mark.parametrize("seed", [0, 10, 45])
+def test_algos(algo: type[SortingAlgo], array_size: int, seed: int) -> None:
+    """Test sorting algorithms."""
+    array = [random.randint(0, array_size) for _ in range(array_size)]  # noqa: S311
+    sorted_array = sorted(array)
+    output = algo()(array)
+    assert output == sorted_array
+
+
+@pytest.mark.parametrize("runs", [10, 100])
+@pytest.mark.parametrize("array_size", [10, 100, 1000])
+@pytest.mark.parametrize("seed", [0, 10, 45])
+def test_benchmark(runs: int, array_size: int, seed: int) -> None:
+    """Test sorting benchmark."""
+    benchmark = SortingBenchmark(
+        sort_algos=[BubbleSort(), InsertionSort(), MergeSort(), QuickSort()], array_size=array_size, seed=seed
+    )
+    benchmark.run()

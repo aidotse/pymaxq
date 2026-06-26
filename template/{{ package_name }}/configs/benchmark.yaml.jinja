@@ -1,0 +1,9 @@
+_target_: {{ package_name }}.sorting.SortingBenchmark
+num_runs: 10
+array_size: 100
+seed: 0
+sort_algos:
+  - _target_: {{ package_name }}.sorting.BubbleSort
+  - _target_: {{ package_name }}.sorting.InsertionSort
+  - _target_: {{ package_name }}.sorting.MergeSort
+  - _target_: {{ package_name }}.sorting.QuickSort

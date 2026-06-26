@@ -1,0 +1,63 @@
+# Versioning & Releases
+
+This project follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`), but you
+never bump the version by hand. The version is **derived from your commit messages** using
+[Conventional Commits](https://www.conventionalcommits.org/) and applied automatically by
+[commitizen](https://commitizen-tools.github.io/commitizen/). Git tags remain the single
+source of truth for the version; commit messages just decide *how much* to bump.
+
+## How the next version is decided
+
+Write commits in the Conventional Commits format — a type prefix, then a description:
+
+```text
+fix: correct off-by-one in the merge step      ->  PATCH  (0.1.0 -> 0.1.1)
+feat: add quicksort benchmark                   ->  MINOR  (0.1.1 -> 0.2.0)
+feat!: drop Python 3.9 support                  ->  MAJOR  (0.2.0 -> 1.0.0)
+```
+
+A `!` after the type, or a `BREAKING CHANGE:` footer, marks a breaking change. While the
+project is still pre-1.0, `major_version_zero` keeps breaking changes at a *minor* bump (so
+`0.x` never accidentally jumps to `1.0`). Types like `docs:`, `chore:`, `test:`, and `refactor:`
+do not trigger a release on their own.
+
+A `commit-msg` git hook (installed by `uv run pre-commit install`) validates every message
+locally, so non-conforming commits are caught before they land. See [precommit](precommit.md).
+
+## What `poe bump` does
+
+On a merge to the default branch, CI runs:
+
+```bash
+uv run poe bump        # = cz bump --yes
+```
+
+commitizen then, in one step:
+
+1. reads the current version from the latest git tag,
+2. scans the commits since that tag and computes the next version,
+3. updates `CHANGELOG.md` (grouped by type),
+4. commits the changelog and creates the new `vX.Y.Z` tag.
+
+If there are **no release-worthy commits** (e.g. a docs-only merge), `cz` exits without
+bumping and CI treats that as "nothing to release" — no tag, no publish. You can preview the
+changelog entry locally at any time with `uv run poe changelog`.
+
+The bump commit carries a `[skip ci]` marker so it doesn't re-trigger the pipeline. Publishing
+runs as a continuation of the same pipeline rather than off the tag — see [CI/CD](ci.md).
+
+## Where the version actually lives
+
+There is **no version string committed** anywhere in the source. `commitizen` is configured
+with `version_provider = "scm"`, meaning it reads and writes the version via git tags. At build
+time, `hatch-vcs` derives the package version from the latest tag (falling back to `0.0.0` when
+no tag exists, e.g. in a fresh checkout or a Docker build without `.git`). This keeps a single
+source of truth and avoids the classic "forgot to bump the version file" drift.
+
+## Documentation versioning
+
+The docs site is versioned with [mike](https://github.com/jimporter/mike), which you can think
+of as a step after `mkdocs build` that organizes the output so each released version of the
+docs is browsable, with `latest` as an alias. This runs automatically as part of a release, so
+when a new version is tagged its documentation is deployed alongside the previous versions at
+[`{{ docs_url }}`]({{ docs_url }}). See [Documentation](documentation.md) for the build details.

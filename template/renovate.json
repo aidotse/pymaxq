@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "description": "Automated dependency updates. Works on GitLab and GitHub. On GitHub, enable the Mend Renovate app; on GitLab, run renovate from a scheduled CI job or the self-hosted runner.",
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Group dev tooling updates into a single PR/MR.",
+      "matchManagers": ["pep621"],
+      "matchDepTypes": ["dependency-groups", "build-system.requires"],
+      "groupName": "dev tooling"
+    },
+    {
+      "description": "Keep pre-commit hook versions current.",
+      "matchManagers": ["pre-commit"],
+      "groupName": "pre-commit hooks"
+    }
+  ]
+}
