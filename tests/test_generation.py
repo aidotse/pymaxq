@@ -169,6 +169,28 @@ def test_repo_and_docs_urls_match_platform(
 
 
 @pytest.mark.parametrize(
+    ("platform", "gitlab_ci", "github_ci", "zizmor"),
+    [
+        ("gitlab", True, False, False),
+        ("github", False, True, True),
+        ("both", True, True, True),
+    ],
+)
+def test_precommit_hooks_match_platform(
+    tmp_path: Path, platform: str, gitlab_ci: bool, github_ci: bool, zizmor: bool
+) -> None:
+    """gitleaks/commitizen are always present; CI-schema and zizmor hooks are scoped to the
+    chosen platform(s)."""
+    out = _generate(tmp_path, {**HYPHEN, "ci_platform": platform})
+    cfg = (out / ".pre-commit-config.yaml").read_text()
+    assert "id: gitleaks" in cfg
+    assert "id: commitizen" in cfg
+    assert ("check-gitlab-ci" in cfg) is gitlab_ci
+    assert ("check-github-workflows" in cfg) is github_ci
+    assert ("id: zizmor" in cfg) is zizmor
+
+
+@pytest.mark.parametrize(
     ("platform", "expect_gitlab", "expect_github"),
     [("gitlab", True, False), ("github", False, True), ("both", True, True)],
 )

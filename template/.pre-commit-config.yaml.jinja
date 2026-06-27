@@ -33,10 +33,22 @@ repos:
       - id: pretty-format-json
       - id: trailing-whitespace
 
+  # Secret scanning (catches API keys/tokens, not just private keys).
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # Validate the CI config(s) for the chosen platform(s) against their schemas.
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: 0.33.2
     hooks:
+{%- if ci_platform in ['gitlab', 'both'] %}
       - id: check-gitlab-ci
+{%- endif %}
+{%- if ci_platform in ['github', 'both'] %}
+      - id: check-github-workflows
+{%- endif %}
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.7
@@ -58,3 +70,11 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
+{%- if ci_platform in ['github', 'both'] %}
+
+  # Static security analysis for GitHub Actions workflows (injection, permissions, pinning).
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.26.1
+    hooks:
+      - id: zizmor
+{%- endif %}

@@ -254,11 +254,11 @@ help = "Render CHANGELOG.md from conventional commits."
 # Use 'git ls-remote' to get the authoritative list of tags directly from the remote.
 # This is non-destructive and ignores any potentially stale or incorrect local tags.
 [tool.poe.tasks.get-latest-tag]
-# `grep .` makes the `|| echo` fallback fire on empty input (no remote / no tags yet),
-# otherwise the `||` would bind to `tail`, which succeeds on empty input and returns "".
-shell = "git ls-remote --tags --refs origin 2>/dev/null | awk '{print $2}' | sed 's:^refs/tags/::' | sort -V | tail -n 1 | grep . || echo '0.0.0'"
-help = "Fetch the highest version tag from the remote registry."
-executor = "simple"
+# commitizen reads the version from the latest git tag (version_provider = scm), returning a
+# bare PEP440 version (e.g. 1.2.3, or 0.0.0 when there are no tags). This replaces a
+# hand-rolled `git ls-remote | awk | sed | sort | tail` pipeline and also works locally.
+cmd = "cz version -p"
+help = "Print the current version (from the latest git tag) via commitizen."
 
 # --- Documentation --------------------------------------------------------------------
 
@@ -281,8 +281,8 @@ args = [
 # versioning. If called with no `--push` flag, it simply commits these changes to the specified branch, so you can check those out manually.
 [tool.poe.tasks.docs-version]
 shell = """
-  # Use the CI variable if it exists, otherwise query Git
-  CURRENT=${CI_COMMIT_TAG:-$(poe get-latest-tag)}
+  # Use the CI tag if present, otherwise read the current version from the latest git tag.
+  CURRENT=${CI_COMMIT_TAG:-$(cz version -p)}
   echo "Found most current tag: $CURRENT"
 
   # 2. Extract Major.Minor (e.g., v1.2.3 -> 1.2)
