@@ -52,7 +52,8 @@ There is **no version string committed** anywhere in the source. `commitizen` is
 with `version_provider = "scm"`, meaning it reads and writes the version via git tags. At build
 time, `hatch-vcs` derives the package version from the latest tag (falling back to `0.0.0` when
 no tag exists, e.g. in a fresh checkout or a Docker build without `.git`). This keeps a single
-source of truth and avoids the classic "forgot to bump the version file" drift.
+source of truth and avoids the classic "forgot to bump the version file" drift. You can print
+the current version at any time with `uv run poe get-latest-tag` (which calls `cz version -p`).
 
 ## Documentation versioning
 
