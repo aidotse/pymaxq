@@ -18,7 +18,10 @@ copier update                               # later: pull in template improvemen
 ## Repository layout (two distinct concerns)
 
 - **Repo root** = *developing the template itself*: `copier.yml` (questions + engine
-  settings), this file, the landing `README.md`, and `tests/` (generation tests).
+  settings), this file, the landing `README.md`, `tests/` (generation tests), and
+  `.github/workflows/docs.yml` — the **dogfood** workflow that generates a project from the
+  template, builds its docs, and deploys to GitHub Pages. That is the template's *own* CI; it
+  is not shipped to generated projects (those get their CI from `template/`).
 - **`template/`** = *what becomes the user's project*. Copier renders this subdirectory
   (`_subdirectory: template`). Inside it:
   - Files ending in **`.jinja`** are rendered through Jinja and the suffix is stripped;
@@ -33,7 +36,8 @@ Template variables (defined in `copier.yml`): `project_name` (slug), `package_na
 (derived default: slug with `-`/spaces → `_`), `description`, `author`, `email`, `group`
 (GitLab namespace), and `ci_platform` (`gitlab` / `github` / `both` — selects which CI
 files render via copier's empty-filename-skip). Pages/docs URLs use **`project_name`**,
-never `package_name`.
+never `package_name`. Repo/docs host URLs are computed per-platform via `repo_url`/`docs_url`
+in `copier.yml` (GitLab host vs `github.com`/`github.io`) — reference those, don't hardcode hosts.
 
 ## Working on the template
 
@@ -52,11 +56,15 @@ handling — the `pymaxq` fixture is degenerate (the two names are identical), s
 hyphenated assertions when changing templates. The tests do not run `uv sync`/`poe test`
 (network-bound); verify end-to-end manually by generating, then `cd /tmp/out && uv sync && uv run poe test`.
 
-**Verification habit:** since this repo isn't git-tracked yet, there's no clean baseline to
-diff against — snapshot the tree (`rsync -a --exclude=.venv . /tmp/snap`) before large
-template edits. Once it IS git-tracked, `copier copy` from a git source reads the latest
-commit, not the working tree, so commit (or check out the ref) before running generation
-tests in CI.
+**This repo is git-tracked (branch `main`, tagged `v0.1.0`), so mind the loop: `edit → commit
+→ test`.** `copier copy`/`copier update` and the tests (which pass `vcs_ref="HEAD"`) read
+**committed HEAD, not the working tree** — so commit template changes before generating or
+running the generation tests, or you'll silently validate stale state.
+
+**Editing `.jinja` docs:** a rendered `.jinja` page that mentions Jinja or GitHub-Actions
+`${{ }}` syntax must wrap those literals in `{% raw %}…{% endraw %}`, or Jinja parses the inner
+`{{ }}` and generation breaks (`test_no_unrendered_jinja` catches it). Plain `.md` files (e.g.
+`copier.md`) are the safer home for heavy template-syntax examples.
 
 ## The generated project (everything below lives under `template/`)
 
@@ -64,7 +72,7 @@ tests in CI.
 Defined in `template/pyproject.toml.jinja`:
 ```bash
 uv sync                       # .venv + dev group (headroom-ai is an optional `agent` extra)
-uv run poe lint               # pre-commit: ruff (lint+format), mypy, file hygiene
+uv run poe lint               # pre-commit: ruff, mypy, gitleaks, zizmor (GitHub-only), file hygiene
 uv run poe deps-check         # deptry: unused / missing / misplaced deps
 uv run poe audit              # uv audit (native, preview) — dependency CVEs
 uv run poe test [cpus] [path] # single-version tests + coverage + artifacts (CPUS first!)
@@ -94,7 +102,12 @@ uv run poe docs --verbose     # mkdocs build (incl. mkdocstrings API ref; run `p
   - **Gotchas baked in** (don't "fix" them away): GitHub checkouts use `fetch-depth: 0` +
     `fetch-tags` (else hatch-vcs/commitizen see no tags); the no-release case is treated as
     success (cz exit 3/21) and skips publish; the GitLab release is created imperatively with
-    `glab` (the declarative `release:` keyword would fire with an empty tag on no-op pushes).
+    `glab` (the declarative `release:` keyword would fire with an empty tag on no-op pushes);
+    GitHub Actions are SHA-pinned and checkouts/permissions are tuned so workflows pass zizmor
+    at default strictness — keep them that way (Renovate maintains the pins).
+- **Security** is layered in: `gitleaks` (secrets) and `zizmor` (GitHub Actions, only when
+  `ci_platform` includes github) as pre-commit hooks, `uv audit` + ruff's bandit (`S`) rules in
+  the gate, and SHA-pinned actions. Documented in `template/docs/security.md`.
 
 **Tooling conventions** (in `template/pyproject.toml.jinja`): ruff is the sole linter+formatter
 (line length 120, py310; bandit `S`/bugbear `B`; `I`/`UP` replace standalone isort/pyupgrade —
