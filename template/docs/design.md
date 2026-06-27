@@ -12,6 +12,7 @@ From a single `copier copy`, you have a project that can:
 - format, lint, and type-check automatically on every commit ([ruff](linting.md), [mypy](linting.md), [pre-commit](precommit.md));
 - test on one interpreter with coverage, *and* across every supported Python version ([pytest](testing.md), [nox](testing.md));
 - check dependency hygiene and scan for known vulnerabilities ([deptry](deptry.md), [`uv audit`](uv.md));
+- scan for leaked secrets and statically audit its CI workflows ([gitleaks + zizmor](security.md));
 - version itself automatically from commit messages, with a generated changelog ([commitizen](versioning.md));
 - build, publish, document, and release through CI on GitLab or GitHub ([CI/CD](ci.md), [Documentation](documentation.md));
 - keep its dependencies current automatically ([Renovate](renovate.md));
@@ -42,7 +43,9 @@ The choices reflect the current (2024–2026) Python tooling consensus, delibera
 | Task running | **poethepoet** | Make / ad-hoc shell scripts; tasks live in `pyproject.toml`, runnable locally and in CI |
 | Versioning | **commitizen** + Conventional Commits | manual bumps / hand-rolled scripts; deterministic semver straight from history |
 | Multi-version testing | **nox** | tox; sessions configured in Python, backed by uv |
-| Dep hygiene · security | **deptry** + `uv audit` | manual review; automated in the quality gate |
+| Dep hygiene · vuln scan | **deptry** + `uv audit` | manual review; automated in the quality gate |
+| Secrets · workflow security | **gitleaks** + **zizmor** | secret scanning beyond private keys; static security analysis of GitHub Actions |
+| Supply chain | **SHA-pinned actions** + Renovate | pin every action to a commit SHA (not a movable tag); Renovate keeps the pins current |
 | Documentation | **Material for MkDocs** + mkdocstrings + mike | Sphinx; Markdown, API docs from docstrings, versioned |
 | Scaffolding | **Copier** | cookiecutter / hand-rolled scripts; supports *updates*, not just one-shot generation |
 | Dependency updates | **Renovate** | Dependabot; works on GitLab **and** GitHub |

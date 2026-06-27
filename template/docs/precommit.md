@@ -12,11 +12,16 @@ which will make sure that your hooks run whenever you run `git commit...`, immed
 
 The configuration for this tool, i.e. specifying which hooks to run under what conditions, is specified in the `.pre-commit-config.yaml` file. There is typically no need to define your own hooks; these are available across several repositories and can be simply re-used as is, with any exceptions for your project. For example, you might want to avoid having your formatter from messing with your `docs` (documentation) directory.
 
-As a default, we recommend a list of pretty standard file-hygiene hooks, followed by:
+As a default, we recommend a list of pretty standard file-hygiene hooks (including `detect-private-key` and `no-commit-to-branch`), followed by:
 
 - **code formatting and linting** using [ruff](https://docs.astral.sh/ruff/) (`ruff format` and `ruff check` — these replace standalone black/isort/pyupgrade; see [linting](linting.md)),
 - **static type checking** using [mypy](https://mypy-lang.org/),
+- **secret scanning** using [gitleaks](https://github.com/gitleaks/gitleaks), which catches accidentally committed API keys/tokens (not just private keys) — see [Security](security.md),
+- **CI-config validation** using [check-jsonschema](https://github.com/python-jsonschema/check-jsonschema), which validates your platform's CI files (`check-gitlab-ci` and/or `check-github-workflows`) against their schemas,
+- **GitHub Actions security** using [zizmor](https://docs.zizmor.sh/) (only in projects that ship GitHub workflows) — see [Security](security.md),
 - **commit-message validation** using [commitizen](https://commitizen-tools.github.io/commitizen/), which runs at the `commit-msg` stage and rejects any message that doesn't follow the [Conventional Commits](https://www.conventionalcommits.org/) format. This matters because your commit messages drive automated [versioning](versioning.md).
+
+The third-party hook repos are version-pinned and kept current automatically by [Renovate](renovate.md).
 
 ## Usage
 

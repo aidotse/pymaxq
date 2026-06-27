@@ -20,7 +20,7 @@ This is an executive summary of the collection of tools / concepts used in this 
 - Unit testing and coverage: [pytest](https://docs.pytest.org/en/stable/) and [coverage](https://coverage.readthedocs.io/en/latest/index.html)
 - Multi-version testing: [nox](https://nox.thea.codes/) across Python 3.10–3.13
 - Dependency hygiene: [deptry](https://github.com/fpgmaas/deptry) (unused / missing / misplaced deps)
-- Security auditing: `uv audit` (known-vulnerability scan of the lockfile)
+- Security: secret scanning with [gitleaks](https://github.com/gitleaks/gitleaks), `uv audit` for dependency vulnerabilities, and [zizmor](https://docs.zizmor.sh/) for GitHub Actions (see [Security](security.md))
 - Dependency updates: [Renovate](https://docs.renovatebot.com/) (`renovate.json`)
 - Documentation: [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) with API docs via [mkdocstrings](https://mkdocstrings.github.io/), versioned with [mike](https://github.com/jimporter/mike)
 - Gated commits: [pre-commit](https://pre-commit.com/)

@@ -65,6 +65,8 @@ Two workflows mirror the same concept:
 - **`ci.yml`** runs on pull requests and pushes to `main`: a `quality` job
   (`lint`/`deps-check`/`audit`/`test`) and a `test-matrix` job (`poe test-all`). Every checkout
   uses `fetch-depth: 0` + `fetch-tags` so hatch-vcs and commitizen can see the tag history.
+  All actions are **SHA-pinned** (with a version comment, Renovate-maintained) and the workflows
+  are written to pass [zizmor](security.md) at default strictness.
 - **`release.yml`** runs on pushes to `main`:
     - the **`bump`** job runs `cz bump`, pushes the commit + tag, and exposes `bumped` and
       `version` as job outputs;

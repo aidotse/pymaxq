@@ -30,6 +30,9 @@ template's dual-platform goal.
   updates together rather than one MR per package.
 
 Renovate detects `pyproject.toml` + `uv.lock` via its `pep621` manager and keeps both in sync.
+It also updates the pinned **pre-commit hook** revisions and the **SHA-pinned GitHub Actions**
+(bumping the commit SHA *and* its `# vX` version comment) — so pinning for safety never means
+going stale. See [Security](security.md) for why those are pinned.
 
 ## Turning it on
 
