@@ -6,6 +6,9 @@
 # a tag-triggered workflow (a GITHUB_TOKEN-pushed tag would not re-trigger anyway, and the
 # bump commit carries [skip ci]).
 #
+# Actions are SHA-pinned (with a version comment, kept current by Renovate) for supply-chain
+# safety and to satisfy zizmor's unpinned-uses check.
+#
 # REQUIRED SETUP (see docs/getting-started.md):
 #   - Allow the workflow to push to the protected `main` branch (branch-protection bypass
 #     for github-actions[bot], or a PAT in `secrets.RELEASE_TOKEN` used below if set).
@@ -35,13 +38,14 @@ jobs:
       bumped: ${{ steps.cz.outputs.bumped }}
       version: ${{ steps.cz.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      # This job pushes the bump commit + tag, so it needs the checkout credentials persisted.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4  # zizmor: ignore[artipacked]
         with:
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
           enable-cache: true
       - run: uv sync --all-extras --dev
@@ -79,13 +83,14 @@ jobs:
       contents: read
       id-token: write       # PyPI OIDC Trusted Publishing
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: "v${{ needs.bump.outputs.version }}"
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
       - name: Build
         run: uv build
       - name: Publish to PyPI (OIDC Trusted Publishing)
@@ -105,13 +110,14 @@ jobs:
     permissions:
       contents: write       # mike pushes to the gh-pages branch
     steps:
-      - uses: actions/checkout@v4
+      # This job pushes versioned docs to gh-pages, so it needs persisted credentials.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4  # zizmor: ignore[artipacked]
         with:
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
           enable-cache: true
       - run: uv sync --all-extras --dev
@@ -136,10 +142,11 @@ jobs:
     permissions:
       contents: write       # create the GitHub Release
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
