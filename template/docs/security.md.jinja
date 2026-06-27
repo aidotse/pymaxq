@@ -16,12 +16,12 @@ in the CI quality gate, so a leaked secret is caught before it ever reaches the 
 
 CI workflows are a common and under-scrutinized attack surface. [zizmor](https://docs.zizmor.sh/)
 is a static-analysis tool for GitHub Actions that audits for issues such as template injection
-through `${{ }}` expressions, over-broad `permissions`, credentials persisted into build
+through {% raw %}`${{ }}`{% endraw %} expressions, over-broad `permissions`, credentials persisted into build
 artifacts, and unpinned actions. It runs as a pre-commit hook (only in projects that ship GitHub
 workflows). The workflows in this template are written to pass zizmor at its **default**
 strictness, demonstrating the hardening it asks for:
 
-- `${{ ... }}` context is passed via `env:` rather than interpolated into `run:` scripts;
+- {% raw %}`${{ ... }}`{% endraw %} context is passed via `env:` rather than interpolated into `run:` scripts;
 - `permissions:` are scoped to the individual job that needs them;
 - checkouts set `persist-credentials: false` unless the job must push;
 - every action is SHA-pinned (see below).
