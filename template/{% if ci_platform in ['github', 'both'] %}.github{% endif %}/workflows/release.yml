@@ -101,7 +101,8 @@ jobs:
         env:
           UV_PUBLISH_USERNAME: ${{ secrets.PRIVATE_INDEX_USERNAME }}
           UV_PUBLISH_PASSWORD: ${{ secrets.PRIVATE_INDEX_PASSWORD }}
-        run: uv publish --publish-url "${{ vars.PRIVATE_INDEX_URL }}"
+          PUBLISH_URL: ${{ vars.PRIVATE_INDEX_URL }}
+        run: uv publish --publish-url "$PUBLISH_URL"
 
   docs:
     needs: bump
@@ -150,7 +151,8 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.bump.outputs.version }}
         run: |
-          gh release create "v${{ needs.bump.outputs.version }}" \
-            --title "v${{ needs.bump.outputs.version }}" \
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
             --notes "Automated release. See CHANGELOG.md for details."

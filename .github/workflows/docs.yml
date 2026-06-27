@@ -38,12 +38,17 @@ jobs:
         with:
           enable-cache: true
       - name: Generate a project from this template (dogfood)
+        # Pass context via env (not inline ${{ }}) to avoid template-injection into the script.
+        env:
+          OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          REPO_DESC: ${{ github.event.repository.description }}
         run: |
-          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          name=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          owner=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+          name=$(echo "$REPO_NAME" | tr '[:upper:]' '[:lower:]')
           uvx copier copy --defaults --vcs-ref HEAD \
             --data project_name="$name" \
-            --data description="${{ github.event.repository.description || 'A max quality Python project' }}" \
+            --data description="${REPO_DESC:-A max quality Python project}" \
             --data author="$owner" \
             --data email="noreply@github.com" \
             --data group="$owner" \
