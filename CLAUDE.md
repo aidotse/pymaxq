@@ -18,14 +18,16 @@ copier update                               # later: pull in template improvemen
 ## Repository layout (two distinct concerns)
 
 - **Repo root** = *developing the template itself*: `copier.yml` (questions + engine
-  settings), this file, the landing `README.md`, `tests/` (generation tests), and the
-  template repo's **own dogfooded toolchain** — a root `pyproject.toml` (dev deps + poe
-  tasks + ruff/mypy/pytest/commitizen config; `[tool.uv] package = false` since it's a
+  settings), this file, the landing `README.md`, `LICENSE`, `tests/` (generation tests), the
+  template repo's **own docs site** (`docs/` + `mkdocs.yaml`, Material — single-version, no
+  mike/mkdocstrings), and its **own dogfooded toolchain** — a root `pyproject.toml` (dev deps
+  + poe tasks + ruff/mypy/pytest/commitizen config; `[tool.uv] package = false` since it's a
   template, not a package), `.pre-commit-config.yaml`, `renovate.json`, `CHANGELOG.md`, and
-  `.github/workflows/` (`ci.yml` quality gate + `e2e-dogfood`, `release.yml` `cz bump`, and
-  `docs.yml` — the **dogfood docs** workflow that generates a project and deploys its docs to
-  GitHub Pages). **None of this root config is shipped** — copier renders only `template/`,
-  so generated projects get their own copies from there.
+  `.github/workflows/`: `ci.yml` (quality gate + `e2e-dogfood`, which generates a project and
+  runs *its* nox matrix + docs build + entrypoint), `release.yml` (`cz bump`), and `docs.yml`
+  (builds **this repo's own** `docs/` site and deploys to GitHub Pages — *not* the sample's
+  docs). **None of this root config is shipped** — copier renders only `template/`, so
+  generated projects get their own copies from there.
 - **`template/`** = *what becomes the user's project*. Copier renders this subdirectory
   (`_subdirectory: template`). Inside it:
   - Files ending in **`.jinja`** are rendered through Jinja and the suffix is stripped;
@@ -54,6 +56,7 @@ uv sync                       # dev env from the root pyproject (copier, pytest,
 uv run pre-commit install     # activate the hooks (incl. commit-msg → Conventional Commits)
 uv run poe lint               # ruff, mypy, gitleaks, zizmor, check-github-workflows, hygiene
 uv run poe test               # the generation tests (pytest tests/)
+uv run poe docs               # build this repo's own docs site (mkdocs build → site/)
 uv run poe generate           # render a sample from HEAD into .dogfood-site/ to inspect
 uv run poe bump               # cz bump (CI runs this on merge to main; rarely run by hand)
 ```

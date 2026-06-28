@@ -1,70 +1,59 @@
 # PyMaxQ
 
-A template for **max quality** Python projects — batteries-included tooling and
-CI/CD that put a project under maximum pressure for quality from day one.
+[![CI](https://github.com/aidotse/pymaxq/actions/workflows/ci.yml/badge.svg)](https://github.com/aidotse/pymaxq/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-pymaxq-blue)](https://aidotse.github.io/pymaxq/)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit)
+[![Code style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://docs.astral.sh/ruff/)
 
-This repository is a [Copier](https://copier.readthedocs.io) template. Generating
-from it gives you a ready-to-go Python project wired up with:
+A [Copier](https://copier.readthedocs.io) template for **max-quality** Python projects —
+batteries-included tooling and CI/CD that put a project under maximum quality pressure from
+day one. Generate once, then pull in future template improvements with `copier update`.
 
-- **[uv](https://docs.astral.sh/uv/)** — dependency & environment management
-- **[ruff](https://github.com/astral-sh/ruff)** — linting + formatting
-- **[mypy](https://mypy-lang.org/)** — static type checking
-- **[pytest](https://docs.pytest.org/)** (+ coverage, xdist, html) — testing
-- **[pre-commit](https://pre-commit.com/)** — gated commits
-- **[poethepoet](https://github.com/nat-n/poethepoet)** — task running
-- **[Material for MkDocs](https://squidfunk.github.io/mkdocs-material/)** + **[mike](https://github.com/jimporter/mike)** — versioned docs
-- **[Hydra](https://hydra.cc/)** — configuration
-- Tag-based versioning (hatch-vcs) and a GitLab CI/CD pipeline
+📖 **Full documentation: <https://aidotse.github.io/pymaxq/>**
 
 ## Generate a project
 
 ```bash
-# 1. Install copier (once)
-uv tool install copier
-
-# 2. Generate your project (from the template's git URL, or a local checkout)
-copier copy https://gitlab.mgmt.ai.se/dev-tools/pymaxq path/to/my-project
-
-# 3. Set it up
-cd path/to/my-project
-uv sync
-uv run pre-commit install
+uv tool install copier                                   # once
+copier copy https://github.com/aidotse/pymaxq my-project # answer a few prompts
+cd my-project
+uv sync && uv run pre-commit install
 git init && git add -A && git commit -m "chore: initial commit from pymaxq"
 ```
 
-Copier will prompt for your project name, package name, description, author, and
-GitLab group, then render the template accordingly.
+Copier prompts for the project name, package name, description, author, namespace, and
+`ci_platform` (`github` default / `gitlab` / `both`), then renders accordingly. See
+[Getting Started](https://aidotse.github.io/pymaxq/getting-started/) for details.
 
-## Stay up to date
+## What you get
 
-Because projects are generated with Copier, you can pull in later improvements to
-this template without losing your own changes:
+A project wired for quality from the first commit:
 
-```bash
-copier update     # run from inside a generated project
-```
+- **[uv](https://docs.astral.sh/uv/)** deps/env/build · **[ruff](https://docs.astral.sh/ruff/)** lint+format · **[mypy](https://mypy-lang.org/)** types
+- **[pytest](https://docs.pytest.org/)** + coverage, and **[nox](https://nox.thea.codes/)** across Python 3.10–3.13
+- security baked in: **[gitleaks](https://github.com/gitleaks/gitleaks)**, **[zizmor](https://docs.zizmor.sh/)**, `uv audit`, ruff's bandit rules, SHA-pinned actions
+- automatic versioning from [Conventional Commits](https://www.conventionalcommits.org/) (**[commitizen](https://commitizen-tools.github.io/commitizen/)**) + changelog
+- GitHub-first, platform-agnostic CI/CD (GitHub Actions and/or GitLab CI), versioned docs ([Material for MkDocs](https://squidfunk.github.io/mkdocs-material/)), and [Renovate](https://docs.renovatebot.com/)
 
-## Repository layout
+The [Design & Philosophy](https://aidotse.github.io/pymaxq/design/) page explains the *why*.
 
-```
-copier.yml      # template questions + engine settings
-template/        # the content that becomes your project (rendered by Copier)
-tests/           # generation tests for the template itself
-```
+## Developing the template
 
-To work on the template, edit files under `template/`. Files ending in `.jinja`
-are rendered (the suffix is stripped); everything else is copied verbatim. The
-package directory `{{ package_name }}/` is renamed to your package on generation.
-
-Run the template's own tests with:
+PyMaxQ dogfoods its own toolchain via poe:
 
 ```bash
-uv run --with copier --with pytest pytest tests/
+uv sync                       # dev env (copier, pytest, ruff, mypy, pre-commit, commitizen)
+uv run pre-commit install     # hooks, incl. commit-msg → Conventional Commits
+uv run poe lint               # ruff, mypy, gitleaks, zizmor, hygiene
+uv run poe test               # the generation tests
+uv run poe docs               # build this documentation site
 ```
 
-## Documentation
+`main` is protected — **work on a branch and merge via PR**; merging triggers `cz bump`. See
+[Developing the template](https://aidotse.github.io/pymaxq/developing/) for the full workflow,
+including how the docs and CI are dogfooded.
 
-The template's documentation is **dogfooded**: `.github/workflows/docs.yml` generates a project
-from this template, builds its docs, and deploys them to GitHub Pages — so the published site is
-produced by the exact `copier copy` → `poe docs` path a consumer uses, and a broken template
-can't ship green docs. Enable it once under **Settings → Pages → Source: GitHub Actions**.
+## License
+
+[MIT](LICENSE) © AI Sweden.
