@@ -1,0 +1,80 @@
+# Documentation for PyMaxQ *itself* (the template), built with the same Material for
+# MkDocs stack the template ships — practicing what it preaches. Published to GitHub
+# Pages by .github/workflows/docs.yml. Single-version (no mike) and no mkdocstrings,
+# since the template repo has no public Python API to document.
+site_name: PyMaxQ
+site_author: AI Sweden
+site_description: A Copier template for max-quality Python projects.
+site_url: https://aidotse.github.io/pymaxq/
+repo_url: https://github.com/aidotse/pymaxq
+repo_name: aidotse/pymaxq
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Design & Philosophy: design.md
+  - Developing the template: developing.md
+  - License: license.md
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.details
+  - pymdownx.superfences
+
+theme:
+  name: material
+  logo: assets/dark_blue.svg
+  icon:
+    repo: fontawesome/brands/github
+  font: false
+  palette:
+    - scheme: default
+      primary: amber
+      accent: blue
+      media: "(prefers-color-scheme: light)"
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: amber
+      accent: blue
+      media: "(prefers-color-scheme: dark)"
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - toc.follow
+    - content.action.edit
+    - content.action.view
+    - content.code.copy
+    - search.highlight
+    - search.suggest
+
+extra:
+  social:
+    - icon: simple/github
+      link: https://github.com/aidotse
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/aisweden
+    - icon: fontawesome/solid/newspaper
+      link: https://www.ai.se/en/newsletter
+
+copyright: Copyright &copy; 2026 AI Sweden

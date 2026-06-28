@@ -22,6 +22,7 @@ dev = [
     "poethepoet>=0.29.0",
     "pre-commit>=4.0.1",
     "commitizen>=3.29.0",
+    "mkdocs-material>=9.5.42",
 ]
 
 # poe tasks are the dev contract — CI calls these, mirroring the generated project.
@@ -31,6 +32,8 @@ lint = "pre-commit run --all-files"
 audit = "uv audit --preview-features audit-command"
 bump = "cz bump --yes"
 changelog = "cz changelog"
+docs = "mkdocs build"
+docs-serve = "mkdocs serve"
 # Generate a sample project from HEAD into .dogfood-site/ to eyeball output.
 generate = "copier copy --defaults --data-file tests/answers.yml --vcs-ref HEAD . .dogfood-site"
 
