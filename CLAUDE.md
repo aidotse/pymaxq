@@ -34,10 +34,12 @@ copier update                               # later: pull in template improvemen
 
 Template variables (defined in `copier.yml`): `project_name` (slug), `package_name`
 (derived default: slug with `-`/spaces → `_`), `description`, `author`, `email`, `group`
-(GitLab namespace), and `ci_platform` (`gitlab` / `github` / `both` — selects which CI
-files render via copier's empty-filename-skip). Pages/docs URLs use **`project_name`**,
-never `package_name`. Repo/docs host URLs are computed per-platform via `repo_url`/`docs_url`
-in `copier.yml` (GitLab host vs `github.com`/`github.io`) — reference those, don't hardcode hosts.
+(GitHub owner/org or GitLab namespace), and `ci_platform` (`gitlab` / `github` / `both`,
+**default `github`** — selects which CI files render via copier's empty-filename-skip).
+Pages/docs URLs use **`project_name`**, never `package_name`. **GitHub is the primary host:**
+repo/docs host URLs are computed per-platform via `repo_url`/`docs_url` in `copier.yml`, and
+`both` resolves to the GitHub host (`github.com`/`github.io`) — only a gitlab-only generation
+uses the internal GitLab/Pages hosts. Reference `repo_url`/`docs_url`, don't hardcode hosts.
 
 ## Working on the template
 

@@ -110,8 +110,10 @@ def test_package_name_used_in_code(tmp_path: Path) -> None:
 
 def test_pages_urls_use_project_name_not_package_name(tmp_path: Path) -> None:
     """Regression: docs/pages URLs must use the slug (project_name), not the
-    underscore package_name -- the bug that existed in the old .j2 templates."""
-    out = _generate(tmp_path, HYPHEN)
+    underscore package_name -- the bug that existed in the old .j2 templates.
+    Pinned to gitlab so the host assertion is stable across default changes (per-platform
+    host coverage lives in test_repo_and_docs_urls_match_platform)."""
+    out = _generate(tmp_path, {**HYPHEN, "ci_platform": "gitlab"})
     for rel in ("docs/testing.md", "docs/documentation.md", "docs/versioning.md"):
         text = (out / rel).read_text()
         assert "acme/my-cool-project" in text, f"{rel} should use the slug in URLs"
@@ -119,6 +121,42 @@ def test_pages_urls_use_project_name_not_package_name(tmp_path: Path) -> None:
 
     pyproject = (out / "pyproject.toml").read_text()
     assert "gitlab.mgmt.ai.se/acme/my-cool-project" in pyproject
+
+
+def test_readme_badges_use_versioned_docs_path(tmp_path: Path) -> None:
+    """Regression: the README's coverage/tests badge URLs must include the mike
+    `/latest/` prefix. mike serves the exported artifacts only under `/<version>/`
+    and `/latest/` (root holds just a redirect), so a bare `/exported/...` 404s and
+    the badges render broken on the public README."""
+    out = _generate(tmp_path, HYPHEN)
+    readme = (out / "README.md").read_text()
+    for artifact in ("tests.svg", "coverage.svg", "pytest.html", "coverage/"):
+        assert f"/latest/exported/{artifact}" in readme, f"badge URL for {artifact} missing /latest/ prefix"
+    assert "/exported/" not in readme.replace("/latest/exported/", ""), "a badge URL omits the /latest/ prefix"
+
+
+def test_readme_has_static_badges(tmp_path: Path) -> None:
+    """The host-agnostic shields.io badges (Python versions, license, code style)
+    render immediately and don't depend on a docs/CI deploy, so they belong on every
+    generated README regardless of platform."""
+    out = _generate(tmp_path, HYPHEN)
+    readme = (out / "README.md").read_text()
+    assert "img.shields.io/badge/python-" in readme
+    assert "img.shields.io/badge/License-MIT" in readme
+    assert "Code style: Ruff" in readme
+
+
+def test_readme_ci_badge_matches_platform(tmp_path: Path) -> None:
+    """The CI-status badge follows the same host convention as repo_url: GitHub is primary,
+    so github/both get the GitHub Actions badge; only gitlab-only gets the pipeline badge."""
+    for platform in ("github", "both"):
+        readme = (_generate(tmp_path / platform, {**HYPHEN, "ci_platform": platform}) / "README.md").read_text()
+        assert "/actions/workflows/ci.yml/badge.svg" in readme, f"{platform}: expected GitHub Actions badge"
+        assert "/badges/main/pipeline.svg" not in readme, f"{platform}: unexpected GitLab pipeline badge"
+
+    gl = (_generate(tmp_path / "gl", {**HYPHEN, "ci_platform": "gitlab"}) / "README.md").read_text()
+    assert "/badges/main/pipeline.svg" in gl
+    assert "/actions/workflows/ci.yml/badge.svg" not in gl
 
 
 def test_copier_answers_file_present(tmp_path: Path) -> None:
@@ -141,6 +179,9 @@ def test_pymaxq_roundtrip_smoke(tmp_path: Path) -> None:
     [
         ("gitlab", "gitlab.mgmt.ai.se/acme/my-cool-project", "pages.mgmt.ai.se/acme/my-cool-project", "github.com"),
         ("github", "github.com/acme/my-cool-project", "acme.github.io/my-cool-project", "gitlab.mgmt.ai.se"),
+        # GitHub is the primary host, so 'both' advertises the GitHub repo/docs URLs even
+        # though the GitLab pipeline still runs as a mirror.
+        ("both", "github.com/acme/my-cool-project", "acme.github.io/my-cool-project", "gitlab.mgmt.ai.se"),
     ],
 )
 def test_repo_and_docs_urls_match_platform(
