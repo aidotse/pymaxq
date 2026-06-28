@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PyMaxQ is a **Copier template** for "max quality" Python projects — its value is the
 tooling, CI/CD, and scaffolding, not runtime code. The example payload
-(`template/{{ package_name }}/sorting.py` — sorting algorithms + a benchmark) is
+(`template/{{ package_name }}/pipeline.py` — a tiny text-transform pipeline) is
 throwaway demo code that exists to exercise the tooling; a generated project replaces it.
 
 Users generate a project with [copier](https://copier.readthedocs.io):
@@ -85,8 +85,9 @@ uv run poe docs --verbose     # mkdocs build (incl. mkdocstrings API ref; run `p
 ```
 
 **Architecture of the generated project:**
-- **Hydra entrypoint**: `scripts/example.py` loads `{{ package_name }}/configs/benchmark.yaml`
-  and `hydra.utils.instantiate` builds the object graph from `_target_` keys.
+- **Hydra entrypoint**: `scripts/example.py` loads `{{ package_name }}/configs/pipeline.yaml`
+  and `hydra.utils.instantiate` builds the object graph from `_target_` keys (a `Pipeline`
+  whose `steps` are themselves `_target_` objects — demonstrates nested instantiate).
 - **Versioning = Conventional Commits → tags.** Commit messages drive the bump (`fix:`→patch,
   `feat:`→minor, `BREAKING CHANGE`→major; `major_version_zero` keeps breaking changes minor
   while < 1.0). `commitizen` (`version_provider = scm`) reads the latest tag, computes the
