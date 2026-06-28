@@ -1,0 +1,93 @@
+# Release flow for the PyMaxQ template itself (mirrors the generated project's model,
+# minus publish — the template is not a distributable package).
+#
+# On a merge to main: `cz bump` reads the Conventional Commits since the last tag and,
+# if any warrant a release, writes CHANGELOG.md, tags vX.Y.Z, and pushes both. The bump
+# commit carries `[skip ci]` so it can't re-trigger this workflow. A no-op (docs-only
+# merge) exits cleanly and creates no tag. The GitHub release runs as a continuation.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      bumped: ${{ steps.cz.outputs.bumped }}
+      version: ${{ steps.cz.outputs.version }}
+    steps:
+      # Needs full history + tags for commitizen, and persisted creds to push the bump.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4 # zizmor: ignore[artipacked]
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          # A PAT (RELEASE_TOKEN) is required to push to a protected main; falls back to
+          # the default token for unprotected setups.
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: true
+      - run: uv sync
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Bump version from conventional commits
+        id: cz
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set +e
+          uv run cz bump --yes
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            NEW_TAG=$(git describe --tags --abbrev=0)
+            echo "bumped=true" >> "$GITHUB_OUTPUT"
+            echo "version=${NEW_TAG#v}" >> "$GITHUB_OUTPUT"
+            git push origin "HEAD:${BRANCH}"
+            git push origin "$NEW_TAG"
+          elif [ "$rc" -eq 3 ] || [ "$rc" -eq 21 ]; then
+            echo "No release-worthy commits (cz exit $rc) — nothing to release."
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+          else
+            exit "$rc"
+          fi
+
+  github-release:
+    needs: bump
+    if: needs.bump.outputs.bumped == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # create the GitHub release
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: v${{ needs.bump.outputs.version }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: true
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.bump.outputs.version }}
+        run: |
+          uv sync
+          NOTES=$(uv run cz changelog "v${VERSION}" --dry-run 2>/dev/null || true)
+          gh release create "v${VERSION}" --title "v${VERSION}" --notes "${NOTES:-Release v${VERSION}}"

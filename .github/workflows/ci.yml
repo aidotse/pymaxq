@@ -1,0 +1,55 @@
+# CI quality gate for DEVELOPING the PyMaxQ template (this repo dogfoods the same
+# toolchain it ships). Logic lives in poe tasks (pyproject.toml); this file is glue.
+# Actions are SHA-pinned (Renovate-maintained) to satisfy zizmor + supply-chain safety.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: true
+      - run: uv sync
+      - name: Lint (ruff, mypy, gitleaks, zizmor, hygiene)
+        run: uv run poe lint
+      - name: Generation tests
+        run: uv run poe test
+
+  e2e-dogfood:
+    # End-to-end: generate a project from this template, sync it, run its FULL nox
+    # matrix (3.10-3.13) and the Hydra entrypoint. The real proof that a freshly
+    # generated project works across versions.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: true
+      - name: Install Python 3.10-3.13
+        run: uv python install 3.10 3.11 3.12 3.13
+      - name: Generate a sample project from HEAD
+        run: uvx copier copy --defaults --data-file tests/answers.yml --vcs-ref HEAD . ../sample
+      - name: Sync, run full nox matrix, run entrypoint
+        working-directory: ../sample
+        run: |
+          uv sync --all-extras --dev
+          uv run poe test-all
+          uv run python scripts/example.py
