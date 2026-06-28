@@ -30,3 +30,4 @@ site/
 .claude/settings.local.json
 .DS_Store
 *.swp
+.serena/

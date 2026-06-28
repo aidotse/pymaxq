@@ -1,0 +1,58 @@
+# Pre-commit hooks for DEVELOPING the PyMaxQ template (NOT shipped to generated
+# projects — those get their own config from template/.pre-commit-config.yaml.jinja).
+#
+# The `template/` directory holds unrendered Jinja (invalid YAML/TOML/Python until
+# generated), so it is excluded globally; it is validated in the generated project
+# and by tests/ instead (see CLAUDE.md "two distinct concerns").
+exclude: '^template/'
+default_install_hook_types: [pre-commit, commit-msg]
+minimum_pre_commit_version: "4.0.1"
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ["--unsafe"]
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: detect-private-key
+      - id: mixed-line-ending
+      - id: no-commit-to-branch  # protect the default branch — work via PRs
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.33.2
+    hooks:
+      - id: check-github-workflows  # validates this repo's own .github/workflows
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.7
+    hooks:
+      - id: ruff-format
+      - id: ruff
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.17.1
+    hooks:
+      - id: mypy
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.26.1
+    hooks:
+      - id: zizmor  # audits this repo's own GitHub Actions workflows
+
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.29.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]

@@ -235,9 +235,7 @@ def test_precommit_hooks_match_platform(
     ("platform", "expect_gitlab", "expect_github"),
     [("gitlab", True, False), ("github", False, True), ("both", True, True)],
 )
-def test_ci_platform_selection(
-    tmp_path: Path, platform: str, expect_gitlab: bool, expect_github: bool
-) -> None:
+def test_ci_platform_selection(tmp_path: Path, platform: str, expect_gitlab: bool, expect_github: bool) -> None:
     """Only the CI files for the chosen platform(s) are generated."""
     out = _generate(tmp_path, {**HYPHEN, "ci_platform": platform})
 

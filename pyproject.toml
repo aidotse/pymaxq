@@ -1,0 +1,65 @@
+# Dev tooling for DEVELOPING the PyMaxQ template itself.
+#
+# This is NOT shipped to generated projects: copier renders only `template/`
+# (`_subdirectory: template`), so everything here configures the *template repo's*
+# own quality gate + release flow. It deliberately dogfoods the same toolchain the
+# template hands to users (uv, poe, ruff, mypy, pytest, pre-commit, commitizen).
+[project]
+name = "pymaxq"
+version = "0.0.0"  # unused — the real version is the git tag (see [tool.commitizen])
+description = "A 'max quality' Python project Copier template."
+requires-python = ">=3.10"
+
+[tool.uv]
+package = false  # this repo is a Copier template, not an installable package
+
+[dependency-groups]
+dev = [
+    "copier>=9.3.0",
+    "pytest>=8.3.3",
+    "ruff>=0.7.0",
+    "mypy>=1.12.1",
+    "poethepoet>=0.29.0",
+    "pre-commit>=4.0.1",
+    "commitizen>=3.29.0",
+]
+
+# poe tasks are the dev contract — CI calls these, mirroring the generated project.
+[tool.poe.tasks]
+test = "pytest tests/ -v"
+lint = "pre-commit run --all-files"
+audit = "uv audit --preview-features audit-command"
+bump = "cz bump --yes"
+changelog = "cz changelog"
+# Generate a sample project from HEAD into .dogfood-site/ to eyeball output.
+generate = "copier copy --defaults --data-file tests/answers.yml --vcs-ref HEAD . .dogfood-site"
+
+[tool.poe]
+shell_interpreter = "bash"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = ["template"]  # unrendered Jinja — linted in the generated project
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S", "A", "PIE", "PL"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "PLR2004"]  # asserts and literal expecteds are normal in tests
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = ["^template/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "scm"
+tag_format = "v$version"
+major_version_zero = true
+update_changelog_on_bump = true
+changelog_incremental = true
+bump_message = "bump: version $current_version → $new_version [skip ci]"
