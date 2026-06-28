@@ -50,9 +50,12 @@ jobs:
         run: uv python install 3.10 3.11 3.12 3.13
       - name: Generate a sample project from HEAD
         run: uvx copier copy --defaults --data-file tests/answers.yml --vcs-ref HEAD . ../sample
-      - name: Sync, run full nox matrix, run entrypoint
+      - name: Sync, run full nox matrix, build docs, run entrypoint
         working-directory: ../sample
         run: |
           uv sync --all-extras --dev
-          uv run poe test-all
-          uv run python scripts/example.py
+          uv run poe test 4                 # single-version run → coverage + exported artifacts
+          uv run poe export-test-artifacts  # badges the docs embed
+          uv run poe test-all               # full nox matrix (3.10-3.13)
+          uv run poe docs                   # prove the shipped mkdocs pipeline builds
+          uv run python scripts/example.py  # prove the Hydra entrypoint runs
