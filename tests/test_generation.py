@@ -89,7 +89,7 @@ def test_package_dir_is_renamed(tmp_path: Path) -> None:
     """The {{ package_name }} dir becomes the derived underscore package name."""
     out = _generate(tmp_path, HYPHEN)
     assert (out / "my_cool_project").is_dir()
-    assert (out / "my_cool_project" / "sorting.py").is_file()
+    assert (out / "my_cool_project" / "pipeline.py").is_file()
     assert not (out / "my-cool-project").exists()
     assert not (out / "pymaxq").exists()
 
@@ -97,11 +97,11 @@ def test_package_dir_is_renamed(tmp_path: Path) -> None:
 def test_package_name_used_in_code(tmp_path: Path) -> None:
     """Imports and Hydra _target_ paths use the underscore package name."""
     out = _generate(tmp_path, HYPHEN)
-    test_file = (out / "test" / "unit" / "test_sorting.py").read_text()
-    assert "from my_cool_project.sorting import" in test_file
+    test_file = (out / "test" / "unit" / "test_pipeline.py").read_text()
+    assert "from my_cool_project.pipeline import" in test_file
 
-    benchmark = (out / "my_cool_project" / "configs" / "benchmark.yaml").read_text()
-    assert "_target_: my_cool_project.sorting.SortingBenchmark" in benchmark
+    config = (out / "my_cool_project" / "configs" / "pipeline.yaml").read_text()
+    assert "_target_: my_cool_project.pipeline.Pipeline" in config
 
     pyproject = (out / "pyproject.toml").read_text()
     assert 'packages = ["my_cool_project"]' in pyproject
@@ -170,7 +170,7 @@ def test_copier_answers_file_present(tmp_path: Path) -> None:
 def test_pymaxq_roundtrip_smoke(tmp_path: Path) -> None:
     """The upstream values still generate cleanly (degenerate name case)."""
     out = _generate(tmp_path, PYMAXQ)
-    assert (out / "pymaxq" / "sorting.py").is_file()
+    assert (out / "pymaxq" / "pipeline.py").is_file()
     assert (out / "pyproject.toml").read_text().count("{{") == 0
 
 

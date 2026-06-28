@@ -10,10 +10,10 @@ from omegaconf import DictConfig
 logger.add(sys.stdout, format="{time} {level} {message}", filter="example", level="INFO")
 
 
-@hydra.main(version_base=None, config_path="../{{ package_name }}/configs", config_name="benchmark")
+@hydra.main(version_base=None, config_path="../{{ package_name }}/configs", config_name="pipeline")
 def main(config: DictConfig) -> None:
-    benchmark = instantiate(config, _convert_="all")
-    benchmark.run()
+    pipeline = instantiate(config, _convert_="all")
+    pipeline.run()
 
 
 if __name__ == "__main__":

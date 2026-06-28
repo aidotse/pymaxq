@@ -1,0 +1,6 @@
+_target_: {{ package_name }}.pipeline.Pipeline
+message: hello
+steps:
+  - _target_: {{ package_name }}.pipeline.Upper
+  - _target_: {{ package_name }}.pipeline.Repeat
+    times: 3

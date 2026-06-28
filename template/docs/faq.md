@@ -19,7 +19,7 @@ The `scripts/` directory is designed as a place for you to store your CLI and Py
 As an example, to run the example script:
 
 ```bash
-uv run scripts/example.py seed=1 num_runs=20 array_size=50
+uv run scripts/example.py message="hi there" steps.1.times=5
 ```
 
 with any parameter assignments of your choice.
