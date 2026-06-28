@@ -18,15 +18,20 @@ copier update                               # later: pull in template improvemen
 ## Repository layout (two distinct concerns)
 
 - **Repo root** = *developing the template itself*: `copier.yml` (questions + engine
-  settings), this file, the landing `README.md`, `tests/` (generation tests), and
-  `.github/workflows/docs.yml` — the **dogfood** workflow that generates a project from the
-  template, builds its docs, and deploys to GitHub Pages. That is the template's *own* CI; it
-  is not shipped to generated projects (those get their CI from `template/`).
+  settings), this file, the landing `README.md`, `tests/` (generation tests), and the
+  template repo's **own dogfooded toolchain** — a root `pyproject.toml` (dev deps + poe
+  tasks + ruff/mypy/pytest/commitizen config; `[tool.uv] package = false` since it's a
+  template, not a package), `.pre-commit-config.yaml`, `renovate.json`, `CHANGELOG.md`, and
+  `.github/workflows/` (`ci.yml` quality gate + `e2e-dogfood`, `release.yml` `cz bump`, and
+  `docs.yml` — the **dogfood docs** workflow that generates a project and deploys its docs to
+  GitHub Pages). **None of this root config is shipped** — copier renders only `template/`,
+  so generated projects get their own copies from there.
 - **`template/`** = *what becomes the user's project*. Copier renders this subdirectory
   (`_subdirectory: template`). Inside it:
   - Files ending in **`.jinja`** are rendered through Jinja and the suffix is stripped;
-    **all other files are copied verbatim**. So edit `template/pyproject.toml.jinja`, not a
-    root `pyproject.toml` (there isn't one).
+    **all other files are copied verbatim**. To change the *generated project's* build config
+    edit `template/pyproject.toml.jinja`; the **root `pyproject.toml` is the template repo's
+    own dev config** (different file, different purpose — don't conflate them).
   - The directory **`template/{{ package_name }}/`** is renamed to the user's package on
     generation (copier always templates path names).
   - `template/{{ _copier_conf.answers_file }}.jinja` writes `.copier-answers.yml` into
@@ -43,13 +48,18 @@ uses the internal GitLab/Pages hosts. Reference `repo_url`/`docs_url`, don't har
 
 ## Working on the template
 
+The repo dogfoods its own toolchain via poe (same contract it ships):
 ```bash
-# Run the template's own generation tests (no project deps needed)
-uv run --with copier --with pytest pytest tests/ -v
-
-# Manually generate to inspect output
-uv tool run copier copy --defaults --data-file tests/answers.yml . /tmp/out
+uv sync                       # dev env from the root pyproject (copier, pytest, ruff, …)
+uv run pre-commit install     # activate the hooks (incl. commit-msg → Conventional Commits)
+uv run poe lint               # ruff, mypy, gitleaks, zizmor, check-github-workflows, hygiene
+uv run poe test               # the generation tests (pytest tests/)
+uv run poe generate           # render a sample from HEAD into .dogfood-site/ to inspect
+uv run poe bump               # cz bump (CI runs this on merge to main; rarely run by hand)
 ```
+`poe lint`/`poe test` ignore `template/` (it's unrendered Jinja — validated in the generated
+project and by `tests/`). `poe generate` ≈ `copier copy --defaults --data-file tests/answers.yml
+--vcs-ref HEAD . .dogfood-site`.
 
 `tests/test_generation.py` generates with two fixtures and asserts structural
 correctness. The **hyphenated fixture** (`my-cool-project` → `my_cool_project`) is the one
@@ -58,10 +68,18 @@ handling — the `pymaxq` fixture is degenerate (the two names are identical), s
 hyphenated assertions when changing templates. The tests do not run `uv sync`/`poe test`
 (network-bound); verify end-to-end manually by generating, then `cd /tmp/out && uv sync && uv run poe test`.
 
-**This repo is git-tracked (branch `main`, tagged `v0.1.0`), so mind the loop: `edit → commit
-→ test`.** `copier copy`/`copier update` and the tests (which pass `vcs_ref="HEAD"`) read
-**committed HEAD, not the working tree** — so commit template changes before generating or
-running the generation tests, or you'll silently validate stale state.
+**This repo is git-tracked and `main` is protected** (the `no-commit-to-branch` pre-commit
+hook blocks direct commits) — **work on a feature branch and merge via PR**, don't commit to
+`main`. Merging to `main` triggers `release.yml` → `cz bump`, which versions the template
+from Conventional Commits (so write `feat:`/`fix:`/… messages); the bump commit carries
+`[skip ci]`. The template repo isn't a package, so there's no publish — the bump just tags +
+updates `CHANGELOG.md`. (Pushing the bump to a protected `main` needs a `RELEASE_TOKEN` PAT.)
+
+**Mind the loop: `edit → commit → test`.** `copier copy`/`copier update` and the tests (which
+pass `vcs_ref="HEAD"`) read **committed HEAD, not the working tree** — so commit template
+changes before generating or running the generation tests, or you'll silently validate stale
+state. (Generating from the *working tree* without committing: use a no-git copy of the repo so
+copier falls back to `vcs_ref=None`.)
 
 **Editing `.jinja` docs:** a rendered `.jinja` page that mentions Jinja or GitHub-Actions
 `${{ }}` syntax must wrap those literals in `{% raw %}…{% endraw %}`, or Jinja parses the inner
