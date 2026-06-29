@@ -12,6 +12,7 @@ commit first), otherwise these tests would run against stale committed state. Th
 ``vcs_ref="HEAD"`` below pins to HEAD when a git repo is present.
 """
 
+import os
 import re
 from pathlib import Path
 
@@ -157,6 +158,16 @@ def test_readme_ci_badge_matches_platform(tmp_path: Path) -> None:
     gl = (_generate(tmp_path / "gl", {**HYPHEN, "ci_platform": "gitlab"}) / "README.md").read_text()
     assert "/badges/main/pipeline.svg" in gl
     assert "/actions/workflows/ci.yml/badge.svg" not in gl
+
+
+def test_ships_claude_code_assets(tmp_path: Path) -> None:
+    """The generated project ships Claude Code guidance + the executable status-line utility."""
+    out = _generate(tmp_path, HYPHEN)
+    assert (out / "docs" / "claude-code.md").is_file()
+    statusline = out / ".claude" / "statusline.sh"
+    assert statusline.is_file()
+    assert statusline.read_text().startswith("#!/usr/bin/env bash")
+    assert os.access(statusline, os.X_OK), "statusline.sh should ship executable"
 
 
 def test_copier_answers_file_present(tmp_path: Path) -> None:

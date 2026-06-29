@@ -109,6 +109,10 @@ uv run poe docs --verbose     # mkdocs build (incl. mkdocstrings API ref; run `p
 - **Hydra entrypoint**: `scripts/example.py` loads `{{ package_name }}/configs/pipeline.yaml`
   and `hydra.utils.instantiate` builds the object graph from `_target_` keys (a `Pipeline`
   whose `steps` are themselves `_target_` objects — demonstrates nested instantiate).
+- **Claude Code is treated as part of the toolchain**: ships `docs/claude-code.md` (high-level
+  best practices, nav under Getting Started) and an executable status-line utility
+  `.claude/statusline.sh` (opt-in via a `statusLine` block in `.claude/settings.json`, which is
+  *not* shipped — documented instead). Plain `.md`/`.sh`, copied verbatim.
 - **Versioning = Conventional Commits → tags.** Commit messages drive the bump (`fix:`→patch,
   `feat:`→minor, `BREAKING CHANGE`→major; `major_version_zero` keeps breaking changes minor
   while < 1.0). `commitizen` (`version_provider = scm`) reads the latest tag, computes the
@@ -137,3 +141,8 @@ uv run poe docs --verbose     # mkdocs build (incl. mkdocstrings API ref; run `p
 (line length 120, py310; bandit `S`/bugbear `B`; `I`/`UP` replace standalone isort/pyupgrade —
 black/isort/pyupgrade were removed). mypy with `ignore_missing_imports`; Google docstrings;
 `loguru` for logging. `deptry` ignores are in `[tool.deptry.per_rule_ignores]`.
+
+## Tooling & Proxy Rules
+- There is a high probability you are operating behind a context compression proxy (Headroom/RTK) to save tokens.
+- If so, trust the compressed summaries for exploration, logging, and directory enumeration.
+- If so, do NOT attempt to bypass the proxy or run raw shell commands to read files unless you are actively writing code for that specific file and the summary is insufficient.
