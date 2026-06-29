@@ -89,6 +89,12 @@ You can preview the next changelog locally with `uv run poe changelog`.
 
 ## Repository settings
 
+A few settings live in the hosting platform's UI. Most importantly, **protect the default
+branch**: the `no-commit-to-branch` pre-commit hook only blocks direct commits *locally* (in
+each contributor's clone), so pair it with server-side protection that requires changes to land
+via a reviewed PR/MR — and allow the release automation to push the version bump (per-platform
+notes below).
+
 {% if ci_platform in ['gitlab', 'both'] -%}
 ### GitLab
 
@@ -103,8 +109,9 @@ Configure these under `Settings` at your repo URL:
 - **CI/CD → Variables**:
     - Add `CI_REPO_ACCESS` (the token value) as **masked** and **not protected**.
     - Add `GIT_SSL_CAINFO` (type **File**) with any SSL certificates required to reach GitLab.
-- **Repository → Protected branches**: protect the default branch, but allow `CI_REPO_ACCESS`
-  (or Maintainers) to push so the automated bump can land. Pages is published by the pipeline.
+- **Repository → Protected branches**: protect the default branch and set *Allowed to push* so
+  changes land only via merge requests — but allow `CI_REPO_ACCESS` (or Maintainers) to push so
+  the automated bump can land. Pages is published by the pipeline.
 - **Merge requests → Merge checks**: enable `Pipelines must succeed` and
   `All threads must be resolved`.
 {% endif -%}
@@ -113,10 +120,12 @@ Configure these under `Settings` at your repo URL:
 
 - **Settings → Actions → General → Workflow permissions**: set **Read and write
   permissions** so the release workflow can push the bump commit/tag and create releases.
-- **Branch protection** on `main`: allow the release workflow to push. Either add a bypass
-  for `github-actions[bot]`, or create a fine-grained PAT with `contents: write`, store it
-  as the `RELEASE_TOKEN` secret (the workflow prefers it over `GITHUB_TOKEN`), and allow it
-  to bypass protection.
+- **Branch protection** on `main`: enable **Require a pull request before merging** so
+  collaborators can't push directly (the local `no-commit-to-branch` hook only guards each
+  clone). Then let the release workflow push the bump — either add a bypass for
+  `github-actions[bot]`, or create a fine-grained PAT with `contents: write`, store it as the
+  `RELEASE_TOKEN` secret (the workflow prefers it over `GITHUB_TOKEN`), and allow it to bypass
+  protection.
 - **Pages**: set the source to the `gh-pages` branch (mike deploys versioned docs there).
 - **Publishing the package**:
     - *Default — PyPI via OIDC Trusted Publishing*: configure a
