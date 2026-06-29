@@ -1,6 +1,6 @@
 # Templating with Copier
 
-This project was generated from the [PyMaxQ](https://gitlab.mgmt.ai.se/dev-tools/pymaxq)
+This project was generated from the [PyMaxQ](https://github.com/aidotse/pymaxq)
 template using [Copier](https://copier.readthedocs.io), a tool for scaffolding projects
 from a template and — crucially — **keeping them up to date** with that template over time.
 
@@ -10,11 +10,11 @@ generating a brand-new project, and pulling later template improvements into an 
 ## How this project was generated
 
 A new project is created by answering a short set of questions (project name, package name,
-description, author, GitLab group, and the target CI platform):
+description, author, namespace — GitHub owner/org or GitLab group — and the target CI platform):
 
 ```bash
 uv tool install copier
-copier copy https://gitlab.mgmt.ai.se/dev-tools/pymaxq path/to/my-project
+copier copy https://github.com/aidotse/pymaxq path/to/my-project
 ```
 
 Copier renders the template into your project and records your answers in a
@@ -64,10 +64,9 @@ the template":
 
 The template is itself tested: `tests/test_generation.py` generates throwaway projects and
 asserts they are structurally correct (package renamed, no unrendered Jinja, the right CI
-files present). Run them with `uv run --with copier --with pytest pytest tests/`.
+files present). After `uv sync`, run them with `uv run poe test`.
 
-The template even **documents itself by dogfooding**: its own `.github/workflows/docs.yml`
-generates a project *from the template* (with the repo's GitHub identity), builds that
-project's documentation, and deploys it to GitHub Pages. So the very page you are reading was
-produced by the same `copier copy` → `poe docs` path a consumer uses — which means a broken
-template can't publish green docs.
+The template **dogfoods its own toolchain**: PyMaxQ is developed with the same uv + poe +
+pre-commit + commitizen setup it ships, its documentation site is built with this same
+Material for MkDocs stack, and its CI generates a throwaway project on every push to prove the
+template still generates, tests, and builds end-to-end — so a broken template can't ship green.

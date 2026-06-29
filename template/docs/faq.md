@@ -2,7 +2,7 @@
 
 ## Is this a template project? How do I use it for my own project?
 
-Yes. This repository was generated from the [PyMaxQ](https://gitlab.mgmt.ai.se/dev-tools/pymaxq) template using [Copier](https://copier.readthedocs.io). To create your own project from the template, install copier and run `copier copy <template-url> path/to/my-project`, answering the prompts. To pull later improvements from the template into an existing project, run `copier update`. See [Templating with Copier](copier.md) for the full workflow.
+Yes. This repository was generated from the [PyMaxQ](https://github.com/aidotse/pymaxq) template using [Copier](https://copier.readthedocs.io). To create your own project from the template, install copier and run `copier copy <template-url> path/to/my-project`, answering the prompts. To pull later improvements from the template into an existing project, run `copier update`. See [Templating with Copier](copier.md) for the full workflow.
 
 ## How do I specify my project dependencies?
 
