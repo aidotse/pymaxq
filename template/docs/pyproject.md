@@ -4,7 +4,7 @@ The `pyproject.toml` file is an implementation of [PEP 518](https://peps.python.
 
 In this project we use the `pyproject.toml` configuration file primarily for 3 purposes: dependency specification, tool config specification, and task specification. Because we use `uv` as the dependency manager (as well as the build system), dependency specification  looks for example something  like this:
 
-```yaml
+```toml
 [project]
 ...
 requires-python = ">=3.10"
@@ -25,7 +25,7 @@ dev = [
 
 Tool configs look something like this:
 
-```yaml
+```toml
 [tool.coverage.xml]
 output = "docs/exported/coverage.xml"
 ```
@@ -34,7 +34,7 @@ Not all tools can be configured in this way; typically this will be specified in
 
 Finally, we can also specify tasks directly in the `pyproject.toml` using [poethepoet](https://github.com/nat-n/poethepoet). You can think of these as functions / scripts that are run as shell commands that you can invoke yourself manually from the command line or in general from anywhere you have access to your `uv` virtual environment. For example, this specifies a simple cleaning task:
 
-```yaml
+```toml
 # Clean temporary files from the repo
 [tool.poe.tasks.clean]
 shell = """

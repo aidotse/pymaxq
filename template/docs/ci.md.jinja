@@ -38,6 +38,15 @@ keeps the two implementations symmetric.
 Pipelines run on merge request events and on pushes to the default branch (not on tags). The
 stages are `.pre → setup → test → version → release`:
 
+!!! info "New to GitLab CI? Key terms"
+    A **stage** is a phase that runs after the previous one completes (jobs in the same stage run
+    in parallel). **`needs:`** lets a job start the moment specific jobs finish, forming a DAG
+    across stages. **`allow_failure: true`** lets a job fail without failing the pipeline.
+    **`rules:`** decide *when* a job runs (e.g. default-branch only). A **dotenv artifact**
+    (`artifacts:reports:dotenv`) exports variables — like `BUMPED` and the new version — from one
+    job into the environment of later jobs. **`CI_REPO_ACCESS`** is a token allowed to push to the
+    protected default branch, so the automated bump can land.
+
 - **`build-ci-image`** (`.pre`): builds the custom CI image (with internal CA certs) used by
   the Python jobs, via Docker BuildKit on a shell runner.
 - **`setup`**: `uv sync` to build and cache the environment (`.venv` + `.uv-cache`, keyed on
@@ -61,6 +70,15 @@ under "Repository settings → GitLab" in [Getting Started](getting-started.md).
 ## GitHub implementation (`.github/workflows/`)
 
 Two workflows mirror the same concept:
+
+!!! info "New to GitHub Actions? Key terms"
+    A **workflow** is a YAML file of **jobs**; each job runs **steps** on a fresh runner.
+    **`needs:`** makes a job wait for another, and **`if: needs.bump.outputs.bumped == 'true'`**
+    runs a job only when an upstream job's **output** says a release happened (jobs publish
+    `outputs` that downstream jobs read). **`permissions:`** scope a job's automatic `GITHUB_TOKEN`
+    to least privilege; **`id-token: write`** turns on OIDC so `uv publish` authenticates to PyPI
+    without a stored token (Trusted Publishing). A **PAT** in the `RELEASE_TOKEN` secret is needed
+    only to push past branch protection.
 
 - **`ci.yml`** runs on pull requests and pushes to `main`: a `quality` job
   (`lint`/`deps-check`/`audit`/`test`) and a `test-matrix` job (`poe test-all`). Every checkout

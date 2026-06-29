@@ -123,7 +123,7 @@ Check out the [uv documentation](https://docs.astral.sh/uv/) for more usage opti
 uv can also scan your dependencies for known security vulnerabilities, reading the same lockfile that defines your environment:
 
 ```bash
-uv run poe audit        # = uv audit
+uv run poe audit        # = uv audit --preview-features audit-command
 ```
 
 This checks your resolved dependencies against published advisory databases and fails if a known-vulnerable package is present. It runs in the CI quality gate, so a newly-disclosed vulnerability in even a transitive dependency surfaces on your next pipeline.
