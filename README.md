@@ -8,7 +8,8 @@
 
 A [Copier](https://copier.readthedocs.io) template for **max-quality** Python projects —
 batteries-included tooling and CI/CD that put a project under maximum quality pressure from
-day one. Generate once, then pull in future template improvements with `copier update`.
+day one. (The name nods to *max Q*, the moment of peak aerodynamic pressure during a launch.)
+Generate once, then pull in future template improvements with `copier update`.
 
 📖 **Full documentation: <https://aidotse.github.io/pymaxq/>**
 
@@ -38,6 +39,10 @@ A project wired for quality from the first commit:
 
 The [Design & Philosophy](https://aidotse.github.io/pymaxq/design/) page explains the *why*.
 
+> **Dogfooded.** PyMaxQ is built with the same toolchain it ships — this documentation is
+> produced by the very `mkdocs` setup it gives you, and CI generates a throwaway project from
+> the template on every push to prove it still generates, tests, and builds.
+
 ## Developing the template
 
 PyMaxQ dogfoods its own toolchain via poe:
@@ -56,4 +61,4 @@ including how the docs and CI are dogfooded.
 
 ## License
 
-[MIT](LICENSE) © AI Sweden.
+[MIT](https://github.com/aidotse/pymaxq/blob/main/LICENSE) © AI Sweden.

@@ -32,10 +32,25 @@ lint = "pre-commit run --all-files"
 audit = "uv audit --preview-features audit-command"
 bump = "cz bump --yes"
 changelog = "cz changelog"
-docs = "mkdocs build"
-docs-serve = "mkdocs serve"
 # Generate a sample project from HEAD into .dogfood-site/ to eyeball output.
 generate = "copier copy --defaults --data-file tests/answers.yml --vcs-ref HEAD . .dogfood-site"
+
+# docs single-sources the home page + license from the canonical files (the same cp-then-build
+# pattern the template ships to generated projects), then builds strictly so broken links or nav
+# entries fail the build. index.md and license.md are generated artifacts (git-ignored).
+[tool.poe.tasks.docs]
+shell = """
+cp README.md docs/index.md
+cp LICENSE docs/license.md
+mkdocs build --strict
+"""
+
+[tool.poe.tasks.docs-serve]
+shell = """
+cp README.md docs/index.md
+cp LICENSE docs/license.md
+mkdocs serve
+"""
 
 [tool.poe]
 shell_interpreter = "bash"
