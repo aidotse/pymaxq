@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Claude Code status line — ships at .claude/statusline.sh.
 # Enable it by adding a "statusLine" block to .claude/settings.json (see docs/claude-code.md).
+#
+# Requires `jq`. The 5h/7d rate-limit lines populate only on Claude.ai Pro/Max plans (they are
+# omitted on API/Console billing); context % can read 0 right after /clear or before the first
+# API response. The `// 0` and `// empty` jq fallbacks below keep the script safe in those cases.
 
 PAYLOAD=$(cat)
 MODEL=$(echo "$PAYLOAD" | jq -r '.model.display_name // "Unknown Model"')

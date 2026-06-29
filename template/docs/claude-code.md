@@ -63,15 +63,19 @@ auto-approve), storing patterns under `permissions.allow` in `.claude/settings.j
 { "permissions": { "allow": ["Bash(uv run poe test *)", "Bash(git diff *)"] } }
 ```
 
-To keep Claude *out* of sensitive or heavy paths, use **deny** rules — there is **no
-`.claudeignore` file**:
+To keep Claude *out* of sensitive or heavy paths, use **deny** rules:
 
 ```json
 { "permissions": { "deny": ["Read(./.env)", "Read(./secrets/**)"] } }
 ```
 
-The `@`-file picker already respects `.gitignore`, so build dirs and `.venv` stay out of
-autocomplete. See [permissions](https://code.claude.com/docs/en/permissions).
+The `@`-file picker already respects `.gitignore` (the `respectGitignore` setting, on by
+default), so build dirs and `.venv` stay out of autocomplete; `claudeMdExcludes` skips chosen
+`CLAUDE.md` files. You'll see a `.claudeignore` file suggested in community tips by analogy to
+`.gitignore`, but Claude Code does **not** read such a file natively — `permissions.deny` and
+`.gitignore` are the documented mechanisms. See
+[settings](https://code.claude.com/docs/en/settings) and
+[permissions](https://code.claude.com/docs/en/permissions).
 
 ## Watch your context window
 
