@@ -1,23 +1,51 @@
-# Documentation for PyMaxQ *itself* (the template), built with the same Material for
-# MkDocs stack the template ships — practicing what it preaches. Published to GitHub
-# Pages by .github/workflows/docs.yml. Single-version (no mike) and no mkdocstrings,
-# since the template repo has no public Python API to document.
+# ==============================================================================
+# WARNING: AUTO-GENERATED FILE
+# This file is synced from template/mkdocs.yml.jinja via `uv run poe sync`.
+# DO NOT MODIFY THIS FILE DIRECTLY!
+# Any changes made here will be overwritten. Make your changes in the template.
+# ==============================================================================
+
 site_name: PyMaxQ
 site_author: AI Sweden
 site_description: A Copier template for max-quality Python projects.
 site_url: https://aidotse.github.io/pymaxq/
 repo_url: https://github.com/aidotse/pymaxq
-repo_name: aidotse/pymaxq
+site_dir: public
 
 plugins:
   - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
 
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Design & Philosophy: design.md
   - Developing the template: developing.md
+  - Contributing: process.md
+  - Tooling:
+    - Copier: copier.md
+    - Claude Code: claude-code.md
+    - CI: ci.md
+    - Deptry: deptry.md
+    - Hydra: hydra.md
+    - Linting: linting.md
+    - mkdocs: mkdocs.md
+    - Poe: poe.md
+    - Pre-commit: pre-commit.md
+    - Pyproject.toml: pyproject.md
+    - Renovate: renovate.md
+    - Security: security.md
+    - Testing: pytest.md
+    - uv: uv.md
+    - versioning: versioning.md
+  - FAQ: faq.md
   - License: license.md
+  - Tests: exported/pytest.html
 
 markdown_extensions:
   - abbr
@@ -25,10 +53,13 @@ markdown_extensions:
   - attr_list
   - def_list
   - footnotes
+  - meta
   - md_in_html
   - tables
   - toc:
       permalink: true
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.betterem
   - pymdownx.caret
   - pymdownx.mark
@@ -36,37 +67,55 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.superfences
 
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
 theme:
   name: material
   logo: assets/dark_blue.svg
   icon:
-    repo: fontawesome/brands/github
+    repo: fontawesome/brands/git-alt
   font: false
   palette:
     - scheme: default
-      primary: amber
       accent: blue
       media: "(prefers-color-scheme: light)"
+      primary: amber
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - scheme: slate
-      primary: amber
       accent: blue
       media: "(prefers-color-scheme: dark)"
+      primary: amber
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
   features:
+    - header.autohide
+    - navigation.indexes
     - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.instant.preview
     - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.prune
     - navigation.top
     - toc.follow
+    - toc.integrate
     - content.action.edit
     - content.action.view
     - content.code.copy
+    - search
     - search.highlight
     - search.suggest
+    - tags
 
 extra:
   social:
@@ -76,5 +125,9 @@ extra:
       link: https://www.linkedin.com/company/aisweden
     - icon: fontawesome/solid/newspaper
       link: https://www.ai.se/en/newsletter
+    - icon: simple/youtube
+      link: https://www.youtube.com/channel/UC9tI59qEGKS_v1PMfWyGY1Q
+    - icon: simple/spotify
+      link: https://open.spotify.com/show/7z6xGzWQosx3346tpscfQc?si=81DsYQJVSNOO3diHMzoMFQ&nd=1&dlsi=6833fe515dc047b0
 
-copyright: Copyright &copy; 2026 AI Sweden
+copyright: Copyright © 2026 AI Sweden

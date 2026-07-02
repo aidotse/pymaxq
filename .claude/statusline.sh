@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
-# Claude Code status line — ships at .claude/statusline.sh.
-# Enable it by adding a "statusLine" block to .claude/settings.json (see docs/claude-code.md).
-#
-# Requires `jq`. The 5h/7d rate-limit lines populate only on Claude.ai Pro/Max plans (they are
-# omitted on API/Console billing); context % can read 0 right after /clear or before the first
-# API response. The `// 0` and `// empty` jq fallbacks below keep the script safe in those cases.
+# ~/.claude/statusline.sh
 
 PAYLOAD=$(cat)
 MODEL=$(echo "$PAYLOAD" | jq -r '.model.display_name // "Unknown Model"')
@@ -120,7 +115,7 @@ else
 fi
 RESET="\033[0m"
 
-# --- NEW: TEAM PLAN BUFFERS & TIMERS (Claude.ai Pro/Max only) ---
+# --- NEW: TEAM PLAN BUFFERS & TIMERS ---
 FIVE_HR_PCT=$(echo "$PAYLOAD" | jq -r '.rate_limits.five_hour.used_percentage // 0')
 SEVEN_DAY_PCT=$(echo "$PAYLOAD" | jq -r '.rate_limits.seven_day.used_percentage // 0')
 

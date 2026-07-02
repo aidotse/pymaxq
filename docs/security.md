@@ -11,43 +11,43 @@ secrets — API keys, tokens, credentials — going well beyond the standard `de
 hook (which only catches private keys). It runs as a [pre-commit](precommit.md) hook and again
 in the CI quality gate, so a leaked secret is caught before it ever reaches the remote.
 
-{% if ci_platform in ['github', 'both'] -%}
-## Workflow security (zizmor)
+## Workflow security (zizmor, GitHub Actions)
 
 CI workflows are a common and under-scrutinized attack surface. [zizmor](https://docs.zizmor.sh/)
 is a static-analysis tool for GitHub Actions that audits for issues such as template injection
-through {% raw %}`${{ }}`{% endraw %} expressions, over-broad `permissions`, credentials persisted into build
-artifacts, and unpinned actions. It runs as a pre-commit hook (only in projects that ship GitHub
-workflows). The workflows in this template are written to pass zizmor at its **default**
+through `${{ }}` expressions, over-broad `permissions`, credentials persisted into build
+artifacts, and unpinned actions. It runs as a pre-commit hook in projects that ship GitHub
+workflows. The GitHub workflows in this template are written to pass zizmor at its **default**
 strictness, demonstrating the hardening it asks for:
 
-- {% raw %}`${{ ... }}`{% endraw %} context is passed via `env:` rather than interpolated into `run:` scripts;
+- `${{ ... }}` context is passed via `env:` rather than interpolated into `run:` scripts;
 - `permissions:` are scoped to the individual job that needs them;
 - checkouts set `persist-credentials: false` unless the job must push;
 - every action is SHA-pinned (see below).
 
-{% endif -%}
+(GitLab CI has no equivalent zizmor pass; there the pipeline hardening lives in scoped tokens and
+protected-branch push rules — see [CI/CD](ci.md).)
+
 ## Dependency vulnerabilities (`uv audit`)
 
-[`uv audit`](uv.md) scans your locked dependencies against published vulnerability advisory
-databases and fails if a known-vulnerable package is present. It runs in the CI quality gate, so
-a newly-disclosed vulnerability in even a transitive dependency surfaces on your next pipeline.
+[`uv audit`](https://docs.astral.sh/uv/) scans your locked dependencies against published
+vulnerability advisory databases and fails if a known-vulnerable package is present. It runs in
+the CI quality gate, so a newly-disclosed vulnerability in even a transitive dependency surfaces
+on your next pipeline.
 
 ## Insecure-code linting (ruff / bandit rules)
 
-The [ruff](linting.md) configuration enables the `S` (flake8-bandit) ruleset, which flags
-insecure code patterns — `eval`, insecure temporary files, weak hashing, shell injection, and so
-on — as a normal part of linting, with no extra tool to run.
+The [ruff](https://docs.astral.sh/ruff/) configuration enables the `S` (flake8-bandit) ruleset,
+which flags insecure code patterns — `eval`, insecure temporary files, weak hashing, shell
+injection, and so on — as a normal part of linting, with no extra tool to run.
 
-{% if ci_platform in ['github', 'both'] -%}
-## Supply chain: SHA-pinned actions
+## Supply chain: SHA-pinned actions (GitHub)
 
 Third-party GitHub Actions are pinned to a full commit **SHA** (with a readable `# vX` comment),
 not a movable tag — so a compromised or retagged action cannot silently change what your CI
-runs. [Renovate](renovate.md) keeps these pins (and their version comments) current, so pinning
-doesn't mean going stale.
+runs. [Renovate](https://docs.renovatebot.com/) keeps these pins (and their version comments)
+current, so pinning doesn't mean going stale.
 
-{% endif -%}
 ## Gated commits & branch protection
 
 Beyond scanning, the [pre-commit](precommit.md) hooks include `detect-private-key`,

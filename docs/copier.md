@@ -1,13 +1,12 @@
 # Templating with Copier
 
-This project was generated from the [PyMaxQ](https://github.com/aidotse/pymaxq)
-template using [Copier](https://copier.readthedocs.io), a tool for scaffolding projects
+[Copier](https://copier.readthedocs.io) is a tool for scaffolding projects
 from a template and — crucially — **keeping them up to date** with that template over time.
 
 You do not need Copier for day-to-day development. You only reach for it in two situations:
 generating a brand-new project, and pulling later template improvements into an existing one.
 
-## How this project was generated
+## Generating new projects
 
 A new project is created by answering a short set of questions (project name, package name,
 description, author, namespace — GitHub owner/org or GitLab group — and the target CI platform):
@@ -25,7 +24,7 @@ it is what makes updates possible.
 
 This is the main reason we use Copier rather than a one-shot generator. When the PyMaxQ
 template gains a new tool, a CI fix, or a better default, you can pull those changes into
-*this* project without losing your own work:
+a previously generated project without losing your own work:
 
 ```bash
 copier update           # run from the project root, on a clean git tree

@@ -4,19 +4,22 @@
 # (`_subdirectory: template`), so everything here configures the *template repo's*
 # own quality gate + release flow. It deliberately dogfoods the same toolchain the
 # template hands to users (uv, poe, ruff, mypy, pytest, pre-commit, commitizen).
+
 [project]
 name = "pymaxq"
 version = "0.0.0"  # unused — the real version is the git tag (see [tool.commitizen])
 description = "A 'max quality' Python project Copier template."
+authors = [{name = "Mauricio Muñoz", email = "mauricio.munoz@ai.se"}]
+license = {text = "MIT"}
+readme = "README.md"
 requires-python = ">=3.10"
-
-[tool.uv]
-package = false  # this repo is a Copier template, not an installable package
 
 [dependency-groups]
 dev = [
     "copier>=9.3.0",
     "pytest>=8.3.3",
+    "pytest-xdist>=3.8.0",
+    "pytest-html>=4.1.1",
     "ruff>=0.7.0",
     "mypy>=1.12.1",
     "poethepoet>=0.29.0",
@@ -25,53 +28,62 @@ dev = [
     "mkdocs-material>=9.5.42",
 ]
 
-# poe tasks are the dev contract — CI calls these, mirroring the generated project.
-[tool.poe.tasks]
-test = "pytest tests/ -v"
-lint = "pre-commit run --all-files"
-audit = "uv audit --preview-features audit-command"
-bump = "cz bump --yes"
-changelog = "cz changelog"
-# Generate a sample project from HEAD into .dogfood-site/ to eyeball output.
-generate = "copier copy --defaults --data-file tests/answers.yml --vcs-ref HEAD . .dogfood-site"
+# Tool configs --------------------------------------------------------------------------------------------------------
 
-# docs single-sources the home page + license from the canonical files (the same cp-then-build
-# pattern the template ships to generated projects), then builds strictly so broken links or nav
-# entries fail the build. index.md and license.md are generated artifacts (git-ignored).
-[tool.poe.tasks.docs]
-shell = """
-cp README.md docs/index.md
-cp LICENSE docs/license.md
-mkdocs build --strict
-"""
-
-[tool.poe.tasks.docs-serve]
-shell = """
-cp README.md docs/index.md
-cp LICENSE docs/license.md
-mkdocs serve
-"""
-
-[tool.poe]
-shell_interpreter = "bash"
+[tool.uv]
+package = false  # this repo is a Copier template, not an installable package
 
 [tool.ruff]
+fix = true
 line-length = 120
 target-version = "py310"
 extend-exclude = ["template"]  # unrendered Jinja — linted in the generated project
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "S", "A", "PIE", "PL"]
+select = [
+  "E",    # pycodestyle errors
+  "F",    # pyflakes
+  "I",    # isort
+  "UP",   # pyupgrade
+  "C",    # flake8-comprehensions
+  "B",    # flake8-bugbear
+  "S",    # flake8-bandit
+  "A",    # flake8-builtins
+  "INP",  # flake8-no-pep420
+  "PIE",  # flake8-pie
+  "PL",   # pylint
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "PLR2004"]  # asserts and literal expecteds are normal in tests
 
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.poe]
+shell_interpreter = "bash"
+verbosity = 1
+
 [tool.mypy]
 ignore_missing_imports = true
 exclude = ["^template/"]
+pretty = true
+show_error_context = true
+show_traceback = true
+explicit_package_bases = true
 
 [tool.pytest.ini_options]
+addopts = [
+  "-ra",                                   # Show summary of all non-passed tests
+  "--capture=tee-sys",                     # Print stdout/stderr live AND capture for reports
+  "--html=docs/exported/pytest.html",      # Generate a visual HTML test report
+  "--junit-xml=docs/exported/pytest.xml",  # Generate JUnit XML for CI/CD UI integration
+  "--self-contained-html",                 # Embed all CSS/JS in the HTML file for easy sharing/artifacts
+  "--showlocals",                          # Print local variable values in tracebacks on failure
+]
 testpaths = ["tests"]
+log_cli = true
+log_cli_level = 10
 
 [tool.commitizen]
 name = "cz_conventional_commits"
@@ -81,3 +93,76 @@ major_version_zero = true
 update_changelog_on_bump = true
 changelog_incremental = true
 bump_message = "bump: version $current_version → $new_version [skip ci]"
+
+# Tasks  ---------------------------------------------------------------------------------------------------------------
+# poe tasks are the dev contract — CI calls these, mirroring the generated project.
+
+[tool.poe.tasks]
+lint = "pre-commit run --all-files"
+audit = "uv audit --preview-features audit-command"
+changelog = "cz changelog"
+# Generate a sample project from HEAD into .dogfood-site/ to eyeball output.
+generate = "copier copy --defaults --data-file tests/answers.yml --vcs-ref HEAD . .dogfood-site"
+
+[tool.poe.tasks.test]
+sequence = [
+  { cmd = "pytest -n ${cpus} ${test}" },
+]
+help = "Run unit testing and generate report"
+args = [
+  { name = "cpus", multiple = false, positional = true, default = 1, help = "Number of cpus to use for xdist" },
+  { name = "test", multiple = true, positional = true, default = "tests", help = "Unit tests to run" }
+]
+
+[tool.poe.tasks.bump]
+cmd = "uv run python scripts/bump.py ${out}"
+args = [{ name = "out", positional = true, default = "bump.env", help = "File to write state variables to" }]
+help = "Bump version, push to remote, and write CI state to the specified file"
+
+[tool.poe.tasks.sync]
+shell = """
+uv run python scripts/render_mkdocs.py
+uv run python scripts/render_precommit.py
+uv run python scripts/render_gitignore.py
+"""
+help = "Sync root configurations from the template source of truth"
+
+[tool.poe.tasks.docs-prep]
+shell = """
+cp README.md docs/index.md
+cp LICENSE docs/license.md
+"""
+deps = ["sync"]
+help = "Prepare canonical files for MkDocs"
+
+[tool.poe.tasks.docs]
+cmd = "mkdocs build --strict"
+deps = ["docs-prep"] # need the output of `test` to include test report in docs, but not marked here -> enforced in CI
+help = "Build the documentation strictly"
+
+# Local development, for previewing the docs. `mkdocs serve` includes a command to build the docs
+[tool.poe.tasks.docs-serve]
+cmd = "mkdocs serve"
+deps = ["docs-prep"] # need the output of `test` to include test report in docs, but not marked here -> enforced in CI
+help = "Serve the documentation locally"
+
+[tool.poe.tasks.clean]
+shell = """
+  rm -rf \
+    .coverage \
+    .coverage.* \
+    .mypy_cache \
+    .pytest_cache \
+    .ruff_cache \
+    .nox \
+    site \
+    public \
+    htmlcov \
+    docs/exported \
+    build \
+    dist
+
+  find . -type d -name "__pycache__" -exec rm -rf {} +
+  find . -type f -name "*.py[cod]" -delete
+"""
+help = "Remove temporary files, caches, and build artifacts"

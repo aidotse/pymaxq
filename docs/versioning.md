@@ -16,10 +16,17 @@ feat: add a reverse transform                   ->  MINOR  (0.1.1 -> 0.2.0)
 feat!: drop Python 3.9 support                  ->  MAJOR  (0.2.0 -> 1.0.0)
 ```
 
-A `!` after the type, or a `BREAKING CHANGE:` footer, marks a breaking change. While the
-project is still pre-1.0, `major_version_zero` keeps breaking changes at a *minor* bump (so
-`0.x` never accidentally jumps to `1.0`). Types like `docs:`, `chore:`, `test:`, and `refactor:`
-do not trigger a release on their own.
+A `!` after the type, or a `BREAKING CHANGE:` footer, marks a breaking change. Types like
+`docs:`, `chore:`, `test:`, `refactor:`, `ci:`, and `style:` are **not release-worthy** — on
+their own they do not trigger a version bump. A *release-worthy* commit is therefore one whose
+type is `fix:` (→ patch), `feat:` (→ minor), or any breaking change (→ major).
+
+**Getting to 1.0.** While the project is still pre-1.0, the `major_version_zero` setting keeps
+breaking changes at a *minor* bump, so a `0.x` line never accidentally jumps to `1.0` just
+because you landed a `feat!:`. Reaching `1.0` is therefore a **deliberate** act, not something
+that happens on its own: when you decide the API is stable, cut it explicitly with
+`uv run cz bump --increment MAJOR` (or turn `major_version_zero` off in `pyproject.toml` so
+breaking changes start bumping the major version normally).
 
 A `commit-msg` git hook (installed by `uv run pre-commit install`) validates every message
 locally, so non-conforming commits are caught before they land. See [precommit](precommit.md).
@@ -39,9 +46,9 @@ commitizen then, in one step:
 3. updates `CHANGELOG.md` (grouped by type),
 4. commits the changelog and creates the new `vX.Y.Z` tag.
 
-If there are **no release-worthy commits** (e.g. a docs-only merge), `cz` exits without
-bumping and CI treats that as "nothing to release" — no tag, no publish. You can preview the
-changelog entry locally at any time with `uv run poe changelog`.
+If there are **no release-worthy commits** (e.g. a docs-only or chore-only merge), `cz` exits
+without bumping and CI treats that as "nothing to release" — no tag, no publish. You can preview
+the changelog entry locally at any time with `uv run poe changelog`.
 
 The bump commit carries a `[skip ci]` marker so it doesn't re-trigger the pipeline. Publishing
 runs as a continuation of the same pipeline rather than off the tag — see [CI/CD](ci.md).
@@ -55,10 +62,9 @@ no tag exists, e.g. in a fresh checkout or a Docker build without `.git`). This 
 source of truth and avoids the classic "forgot to bump the version file" drift. You can print
 the current version at any time with `uv run poe get-latest-tag` (which calls `cz version -p`).
 
-## Documentation versioning
+## What about the docs?
 
-The docs site is versioned with [mike](https://github.com/jimporter/mike), which you can think
-of as a step after `mkdocs build` that organizes the output so each released version of the
-docs is browsable, with `latest` as an alias. This runs automatically as part of a release, so
-when a new version is tagged its documentation is deployed alongside the previous versions at
-[`{{ docs_url }}`]({{ docs_url }}). See [Documentation](documentation.md) for the build details.
+The documentation site is **single-version**: each release rebuilds and replaces the published
+site (there is no per-version archive). It deploys automatically as part of the same release
+pipeline — via the GitHub Pages Actions on GitHub, or the reserved `pages` job on GitLab. See
+[Documentation](documentation.md) and [CI/CD](ci.md) for the details.

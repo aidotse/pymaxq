@@ -1,148 +1,73 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**PyMaxQ is a [Copier](https://copier.readthedocs.io) template for "max quality" Python
+projects.** Its value is the shipped toolchain/CI/scaffolding, *not* runtime code —
+`template/{{ package_name }}/pipeline.py` is throwaway demo payload a generated project
+replaces. Design rationale → `docs/design.md`. Full contributor guide → `docs/developing.md`
+(read it before non-trivial changes; this file is only the tripwires + command contract).
 
-## What this repo is
+## Two concerns — don't conflate them
 
-PyMaxQ is a **Copier template** for "max quality" Python projects — its value is the
-tooling, CI/CD, and scaffolding, not runtime code. The example payload
-(`template/{{ package_name }}/pipeline.py` — a tiny text-transform pipeline) is
-throwaway demo code that exists to exercise the tooling; a generated project replaces it.
+- **Repo root** = *developing the template itself*: its own dogfooded toolchain (root
+  `pyproject.toml`, `.pre-commit-config.yaml`, `renovate.json`, `.github/workflows/`), plus
+  `copier.yml` (questions), `tests/` (generation tests), and this repo's own `docs/` site.
+  **None of this root config ships** — copier renders only `template/`.
+- **`template/`** = *what becomes the user's project* (`_subdirectory: template`).
+  `.jinja` files are rendered (suffix stripped); everything else is copied verbatim.
+  `template/{{ package_name }}/` is renamed to the user's package. Don't delete
+  `template/{{ _copier_conf.answers_file }}.jinja` (it enables `copier update`).
 
-Users generate a project with [copier](https://copier.readthedocs.io):
+> ⚠️ The root `pyproject.toml` is the **template's own dev config**. To change the *generated*
+> project's build config, edit **`template/pyproject.toml.jinja`** — different file, different
+> purpose. Same trap for every root-vs-`template/` pair. Full layout + template variables
+> (`project_name`, `package_name`, `ci_platform`, …) → `docs/developing.md`.
+
+## Before you touch anything (silent-failure tripwires)
+
+- **edit → commit → test.** `copier`/`tests/` read **committed HEAD, not the working tree**
+  (`vcs_ref="HEAD"`). Commit template changes before generating or running the tests, or you
+  validate stale state. (Generate from the working tree via a *no-git* copy → copier falls
+  back to `vcs_ref=None`.)
+- **`main` is protected** (pre-commit's `no-commit-to-branch` blocks direct commits). Work on a
+  branch, merge via PR. Merge → `release.yml` runs `cz bump`, so write **Conventional Commits**
+  (`feat:`/`fix:`/`BREAKING CHANGE`).
+- **`.jinja` docs**: wrap literal Jinja / GH-Actions `${{ … }}` in `{% raw %}…{% endraw %}` or
+  generation breaks (`test_no_unrendered_jinja` catches it). Prefer plain `.md` for heavy
+  template-syntax examples.
+- **poe tasks are the CI contract** — CI files just call them. Put logic in poe tasks, not CI YAML.
+- **Tests**: the **hyphenated fixture** (`my-cool-project` → `my_cool_project`) is the
+  meaningful one — it exercises the package rename and `project_name`-vs-`package_name` URL
+  handling. The `pymaxq` fixture is degenerate. Keep the hyphenated assertions.
+
+## Working on the template (this repo's own toolchain, via poe)
+
 ```bash
-copier copy <repo-url> path/to/my-project   # prompts for project_name, package_name, etc.
-copier update                               # later: pull in template improvements
+uv sync                    # dev env from root pyproject (copier, pytest, ruff, …)
+uv run pre-commit install  # hooks (incl. commit-msg → Conventional Commits)
+uv run poe lint            # ruff, mypy, gitleaks, zizmor, workflow checks, hygiene
+uv run poe test            # generation tests (tests/)
+uv run poe docs            # build this repo's own docs site
+uv run poe generate        # render a sample from HEAD into .dogfood-site/ to inspect
 ```
+`poe lint`/`poe test` skip `template/` (unrendered Jinja — validated in generated projects and
+by `tests/`). Task details → `docs/poe.md`; tool deep-dives → `docs/{uv,linting,pyproject,deptry,renovate,hydra,testing}.md`.
 
-## Repository layout (two distinct concerns)
+## The generated project (everything under `template/`)
 
-- **Repo root** = *developing the template itself*: `copier.yml` (questions + engine
-  settings), this file, the landing `README.md`, `LICENSE`, `tests/` (generation tests), the
-  template repo's **own docs site** (`docs/` + `mkdocs.yaml`, Material — single-version, no
-  mike/mkdocstrings), and its **own dogfooded toolchain** — a root `pyproject.toml` (dev deps
-  + poe tasks + ruff/mypy/pytest/commitizen config; `[tool.uv] package = false` since it's a
-  template, not a package), `.pre-commit-config.yaml`, `renovate.json`, `CHANGELOG.md`, and
-  `.github/workflows/`: `ci.yml` (quality gate + `e2e-dogfood`, which generates a project and
-  runs *its* nox matrix + docs build + entrypoint), `release.yml` (`cz bump`), and `docs.yml`
-  (builds **this repo's own** `docs/` site and deploys to GitHub Pages — *not* the sample's
-  docs). **None of this root config is shipped** — copier renders only `template/`, so
-  generated projects get their own copies from there.
-- **`template/`** = *what becomes the user's project*. Copier renders this subdirectory
-  (`_subdirectory: template`). Inside it:
-  - Files ending in **`.jinja`** are rendered through Jinja and the suffix is stripped;
-    **all other files are copied verbatim**. To change the *generated project's* build config
-    edit `template/pyproject.toml.jinja`; the **root `pyproject.toml` is the template repo's
-    own dev config** (different file, different purpose — don't conflate them).
-  - The directory **`template/{{ package_name }}/`** is renamed to the user's package on
-    generation (copier always templates path names).
-  - `template/{{ _copier_conf.answers_file }}.jinja` writes `.copier-answers.yml` into
-    generated projects so `copier update` works — don't remove it.
+Same poe-is-the-CI-contract model. Tasks in `template/pyproject.toml.jinja`: `lint`,
+`deps-check`, `audit`, `test [cpus] [path]`, `test-all` (nox 3.10–3.13; `noxfile.py` is the
+version SoT), `build`, `bump`, `docs`. Topic → where it's documented (`template/docs/` unless noted):
 
-Template variables (defined in `copier.yml`): `project_name` (slug), `package_name`
-(derived default: slug with `-`/spaces → `_`), `description`, `author`, `email`, `group`
-(GitHub owner/org or GitLab namespace), and `ci_platform` (`gitlab` / `github` / `both`,
-**default `github`** — selects which CI files render via copier's empty-filename-skip).
-Pages/docs URLs use **`project_name`**, never `package_name`. **GitHub is the primary host:**
-repo/docs host URLs are computed per-platform via `repo_url`/`docs_url` in `copier.yml`, and
-`both` resolves to the GitHub host (`github.com`/`github.io`) — only a gitlab-only generation
-uses the internal GitLab/Pages hosts. Reference `repo_url`/`docs_url`, don't hardcode hosts.
+- **CI/CD** + baked-in gotchas (`fetch-depth: 0` + `fetch-tags`; cz exit 3/21 = no-release
+  success; imperative `glab` release; zizmor-clean SHA-pinned actions) → `ci.md`
+- **Versioning** (Conventional Commits → git tags via commitizen; `hatch-vcs`; no version string
+  committed; `major_version_zero`) → `versioning.md`
+- **Security** (gitleaks, zizmor when github, `uv audit`, ruff `S`, SHA-pinned actions) → `security.md`
+- **Claude Code** as toolchain (docs + opt-in `.claude/statusline.sh`; `settings.json` *not* shipped) → `claude-code.md`
+- **Hydra entrypoint** `scripts/example.py` → nested `_target_` instantiate → `getting-started.md` + the code
+- **Tooling conventions** (ruff sole linter+formatter, mypy, deptry, loguru): config is SoT in
+  `template/pyproject.toml.jinja`; reference deep-dives in root `docs/`.
 
-## Working on the template
-
-The repo dogfoods its own toolchain via poe (same contract it ships):
-```bash
-uv sync                       # dev env from the root pyproject (copier, pytest, ruff, …)
-uv run pre-commit install     # activate the hooks (incl. commit-msg → Conventional Commits)
-uv run poe lint               # ruff, mypy, gitleaks, zizmor, check-github-workflows, hygiene
-uv run poe test               # the generation tests (pytest tests/)
-uv run poe docs               # build this repo's own docs site (mkdocs build → site/)
-uv run poe generate           # render a sample from HEAD into .dogfood-site/ to inspect
-uv run poe bump               # cz bump (CI runs this on merge to main; rarely run by hand)
-```
-`poe lint`/`poe test` ignore `template/` (it's unrendered Jinja — validated in the generated
-project and by `tests/`). `poe generate` ≈ `copier copy --defaults --data-file tests/answers.yml
---vcs-ref HEAD . .dogfood-site`.
-
-`tests/test_generation.py` generates with two fixtures and asserts structural
-correctness. The **hyphenated fixture** (`my-cool-project` → `my_cool_project`) is the one
-that actually exercises the package rename and the project_name-vs-package_name URL
-handling — the `pymaxq` fixture is degenerate (the two names are identical), so keep the
-hyphenated assertions when changing templates. The tests do not run `uv sync`/`poe test`
-(network-bound); verify end-to-end manually by generating, then `cd /tmp/out && uv sync && uv run poe test`.
-
-**This repo is git-tracked and `main` is protected** (the `no-commit-to-branch` pre-commit
-hook blocks direct commits) — **work on a feature branch and merge via PR**, don't commit to
-`main`. Merging to `main` triggers `release.yml` → `cz bump`, which versions the template
-from Conventional Commits (so write `feat:`/`fix:`/… messages); the bump commit carries
-`[skip ci]`. The template repo isn't a package, so there's no publish — the bump just tags +
-updates `CHANGELOG.md`. (Pushing the bump to a protected `main` needs a `RELEASE_TOKEN` PAT.)
-
-**Mind the loop: `edit → commit → test`.** `copier copy`/`copier update` and the tests (which
-pass `vcs_ref="HEAD"`) read **committed HEAD, not the working tree** — so commit template
-changes before generating or running the generation tests, or you'll silently validate stale
-state. (Generating from the *working tree* without committing: use a no-git copy of the repo so
-copier falls back to `vcs_ref=None`.)
-
-**Editing `.jinja` docs:** a rendered `.jinja` page that mentions Jinja or GitHub-Actions
-`${{ }}` syntax must wrap those literals in `{% raw %}…{% endraw %}`, or Jinja parses the inner
-`{{ }}` and generation breaks (`test_no_unrendered_jinja` catches it). Plain `.md` files (e.g.
-`copier.md`) are the safer home for heavy template-syntax examples.
-
-## The generated project (everything below lives under `template/`)
-
-**poe tasks are the CI contract** — CI files just call them, so logic stays platform-agnostic.
-Defined in `template/pyproject.toml.jinja`:
-```bash
-uv sync                       # .venv + dev group (headroom-ai is an optional `agent` extra)
-uv run poe lint               # pre-commit: ruff, mypy, gitleaks, zizmor (GitHub-only), file hygiene
-uv run poe deps-check         # deptry: unused / missing / misplaced deps
-uv run poe audit              # uv audit (native, preview) — dependency CVEs
-uv run poe test [cpus] [path] # single-version tests + coverage + artifacts (CPUS first!)
-uv run poe test-all           # nox matrix across 3.10–3.13 (noxfile.py is the version SoT)
-uv run poe build              # uv build (wheel + sdist)
-uv run poe bump               # commitizen: version from commits + CHANGELOG + tag
-uv run poe docs --verbose     # mkdocs build (incl. mkdocstrings API ref; run `poe test` first)
-```
-
-**Architecture of the generated project:**
-- **Hydra entrypoint**: `scripts/example.py` loads `{{ package_name }}/configs/pipeline.yaml`
-  and `hydra.utils.instantiate` builds the object graph from `_target_` keys (a `Pipeline`
-  whose `steps` are themselves `_target_` objects — demonstrates nested instantiate).
-- **Claude Code is treated as part of the toolchain**: ships `docs/claude-code.md` (high-level
-  best practices, nav under Getting Started) and an executable status-line utility
-  `.claude/statusline.sh` (opt-in via a `statusLine` block in `.claude/settings.json`, which is
-  *not* shipped — documented instead). Plain `.md`/`.sh`, copied verbatim.
-- **Versioning = Conventional Commits → tags.** Commit messages drive the bump (`fix:`→patch,
-  `feat:`→minor, `BREAKING CHANGE`→major; `major_version_zero` keeps breaking changes minor
-  while < 1.0). `commitizen` (`version_provider = scm`) reads the latest tag, computes the
-  next, writes `CHANGELOG.md` + the tag; `hatch-vcs` builds at that tag. No version string is
-  committed. A `commit-msg` pre-commit hook validates messages. **There is no manual bump and
-  no branch heuristic.**
-- **CI/CD — one concept, two implementations** (`.gitlab-ci.yml` and/or `.github/workflows/`):
-  - PR/MR → quality gate (`lint`, `deps-check`, `audit`, `test`, `test-all`).
-  - Push to default branch → `poe bump`; if there are release-worthy commits it tags, and
-    **publish/docs/release run as a continuation of the same pipeline** (via `needs:`), never
-    a tag-triggered second run. The bump commit carries `[skip ci]`.
-  - GitLab publishes to its package + container registries and GitLab Pages; GitHub publishes
-    to PyPI via OIDC Trusted Publishing (or a private index when repo var
-    `PUBLISH_TARGET=private-index`) and GitHub Pages.
-  - **Gotchas baked in** (don't "fix" them away): GitHub checkouts use `fetch-depth: 0` +
-    `fetch-tags` (else hatch-vcs/commitizen see no tags); the no-release case is treated as
-    success (cz exit 3/21) and skips publish; the GitLab release is created imperatively with
-    `glab` (the declarative `release:` keyword would fire with an empty tag on no-op pushes);
-    GitHub Actions are SHA-pinned and checkouts/permissions are tuned so workflows pass zizmor
-    at default strictness — keep them that way (Renovate maintains the pins).
-- **Security** is layered in: `gitleaks` (secrets) and `zizmor` (GitHub Actions, only when
-  `ci_platform` includes github) as pre-commit hooks, `uv audit` + ruff's bandit (`S`) rules in
-  the gate, and SHA-pinned actions. Documented in `template/docs/security.md`.
-
-**Tooling conventions** (in `template/pyproject.toml.jinja`): ruff is the sole linter+formatter
-(line length 120, py310; bandit `S`/bugbear `B`; `I`/`UP` replace standalone isort/pyupgrade —
-black/isort/pyupgrade were removed). mypy with `ignore_missing_imports`; Google docstrings;
-`loguru` for logging. `deptry` ignores are in `[tool.deptry.per_rule_ignores]`.
-
-## Tooling & Proxy Rules
-- There is a high probability you are operating behind a context compression proxy (Headroom/RTK) to save tokens.
-- If so, trust the compressed summaries for exploration, logging, and directory enumeration.
-- If so, do NOT attempt to bypass the proxy or run raw shell commands to read files unless you are actively writing code for that specific file and the summary is insufficient.
+`ci_platform` (`gitlab`/`github`/`both`, default `github`) selects which CI files render. URLs
+use `project_name`, never `package_name`; reference `repo_url`/`docs_url` from `copier.yml`,
+never hardcode hosts (`both` resolves to the GitHub host).

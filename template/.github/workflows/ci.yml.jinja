@@ -1,0 +1,28 @@
+# ==============================================================================
+# NOTE FOR TEMPLATE CONTRIBUTORS:
+# 1. This file has a `.jinja` extension so GitHub Actions ignores it in the 
+#    PyMaxQ repo. Copier will strip the extension when generating the project.
+# 2. We use {% raw %} ... {% endraw %} blocks around native GitHub Actions 
+#    variables (like `${{ github.ref }}`). This prevents Jinja from confusing 
+#    GitHub's syntax with its own and attempting to evaluate it.
+# 3. The `build_docker` and `publish_pypi` booleans use standard Jinja syntax 
+#    ({{ variable }}) to dynamically inject the user's Copier prompt answers.
+# ==============================================================================
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-{% raw %}${{ github.ref }}{% endraw %}
+  cancel-in-progress: {% raw %}${{ github.ref != 'refs/heads/main' }}{% endraw %}
+
+jobs:
+  core-pipeline:
+    uses: ./.github/workflows/reusable-pipeline.yml
+    with:
+      build_docker: true
+      publish_pypi: true
+    secrets: inherit

@@ -2,7 +2,7 @@
 
 The `pyproject.toml` file is an implementation of [PEP 518](https://peps.python.org/pep-0518/) for building Python projects. Basically, it allows users to specify which dependencies should be installed as part of the project, what build backend to use, and to set various project- and tool- level configurations. It is an attempt to improve over the long-standing [setuptools](https://pypi.org/project/setuptools/) / `setup.py` way of packaging Python projects. See the previous link for some comparisons and rationale as to why configuring projects with `pyproject.toml` is generally better.
 
-In this project we use the `pyproject.toml` configuration file primarily for 3 purposes: dependency specification, tool config specification, and task specification. Because we use `uv` as the dependency manager (as well as the build system), dependency specification  looks for example something  like this:
+In this project we use the `pyproject.toml` configuration file primarily for 3 purposes: dependency specification, tool config specification, and task specification. Because we use `uv` as the dependency manager (as well as the build system), dependency specification  looks for example something like this:
 
 ```toml
 [project]
@@ -45,7 +45,7 @@ shell = """
     .ruff_cache \
     .site \
     public \
-    **/__pycache__ \
+    __pycache__ \
     docs/exported
 """
 ```

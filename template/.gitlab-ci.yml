@@ -210,35 +210,17 @@ test-matrix:
 version-bump:
   extends: .cache_consumer
   stage: version
-  needs: ["run-tests"]
+  needs: ["run-tests", "test-matrix"]
   rules: *rules_main_only
   script:
     - git remote set-url origin "$HTTPS_REMOTE"
-    - |
-      set +e
-      uv run cz bump --yes
-      rc=$?
-      set -e
-      if [ $rc -eq 0 ]; then
-        BUMPED=true
-      elif [ $rc -eq 3 ] || [ $rc -eq 21 ]; then
-        echo "No release-worthy commits since the last tag (cz exit $rc); skipping release."
-        BUMPED=false
-      else
-        echo "cz bump failed unexpectedly (exit $rc)."
-        exit $rc
-      fi
-      echo "BUMPED=$BUMPED" >> bump.env
-    - |
-      if [ "$BUMPED" = "true" ]; then
-        NEW_TAG=$(git describe --tags --abbrev=0)
-        echo "NEW_TAG=$NEW_TAG" >> bump.env
-        echo "NEW_VERSION=${NEW_TAG#v}" >> bump.env
-        echo "Pushing bump commit + tag $NEW_TAG ..."
-        git push "$HTTPS_REMOTE" "HEAD:$CI_DEFAULT_BRANCH"
-        git push "$HTTPS_REMOTE" "$NEW_TAG"
-      fi
+    - uv run poe bump bump.env
+    - source bump.env
+    # Pre-generate the release notes for the Alpine container in the next stage
+    - if [ "$bumped" = "true" ]; then uv run cz changelog "v${version}" --dry-run > release_notes.md; fi
   artifacts:
+    paths:
+      - release_notes.md
     reports:
       dotenv: bump.env
 
@@ -252,8 +234,11 @@ publish-package:
   needs: ["version-bump"]
   rules: *rules_main_only
   script:
-    - '[ "$BUMPED" = "true" ] || { echo "Nothing to release."; exit 0; }'
-    - echo "Building and publishing $NEW_VERSION..."
+    - '[ "$bumped" = "true" ] || { echo "Nothing to release."; exit 0; }'
+    - git fetch origin --tags
+    - git checkout "v$version"
+    - uv sync --frozen
+    - echo "Building and publishing v$version..."
     - uv build
     - |
       uv publish dist/* \
@@ -268,7 +253,9 @@ build-and-push-image:
   needs: ["version-bump"]
   rules: *rules_main_only
   script:
-    - '[ "$BUMPED" = "true" ] || { echo "Nothing to release."; exit 0; }'
+    - '[ "$bumped" = "true" ] || { echo "Nothing to release."; exit 0; }'
+    - git fetch origin --tags
+    - git checkout "v$version"
     - unset DOCKER_HOST
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" $CI_REGISTRY
     - |
@@ -276,7 +263,7 @@ build-and-push-image:
       [registry."$CI_SERVER_HOST:5050"]
         ca=["${GIT_SSL_CAINFO}"]
       EOF
-    - echo "Building Docker image for version $NEW_VERSION..."
+    - echo "Building Docker image for version v$version..."
     - export BUILDER_NAME="builder-$CI_JOB_ID"
     - docker buildx create --name $BUILDER_NAME --use --driver docker-container --config buildkitd.toml
     - docker buildx inspect --bootstrap
@@ -285,11 +272,11 @@ build-and-push-image:
       docker buildx build --push \
         --provenance=false \
         --secret id=internal_ca,src="${GIT_SSL_CAINFO}" \
-        --build-arg VERSION="$NEW_VERSION" \
+        --build-arg VERSION="$version" \
         --cache-from type=registry,ref="$CI_REGISTRY_IMAGE:buildcache" \
         --cache-to type=registry,ref="$CI_REGISTRY_IMAGE:buildcache",mode=max \
         -f docker/Dockerfile \
-        -t "$CI_REGISTRY_IMAGE:$NEW_VERSION" \
+        -t "$CI_REGISTRY_IMAGE:v$version" \
         -t "$CI_REGISTRY_IMAGE:latest" .
   after_script:
     - docker buildx rm -f "builder-$CI_JOB_ID" || true
@@ -303,10 +290,11 @@ build-docs:
   needs: ["version-bump", "run-tests"]
   rules: *rules_main_only
   script:
-    - '[ "$BUMPED" = "true" ] || { echo "Nothing to release."; exit 0; }'
-    - git fetch origin
+    - '[ "$bumped" = "true" ] || { echo "Nothing to release."; exit 0; }'
+    - git fetch origin --tags
+    - git checkout "v$version"
+    - uv sync --frozen
     - uv run poe docs --verbose
-    - uv run poe docs-version --prefix public --branch pages
     - git checkout pages
   artifacts:
     paths:
@@ -318,7 +306,7 @@ pages:
   needs: ["build-docs"]
   rules: *rules_main_only
   script:
-    - '[ "$BUMPED" = "true" ] || { echo "Nothing to release."; exit 0; }'
+    - '[ "$bumped" = "true" ] || { echo "Nothing to release."; exit 0; }'
     - echo "Deploying to GitLab Pages..."
   artifacts:
     paths:
@@ -340,6 +328,7 @@ gitlab-release:
     - apk add --no-cache ca-certificates >/dev/null 2>&1 || true
     - update-ca-certificates >/dev/null 2>&1 || true
   script:
-    - '[ "$BUMPED" = "true" ] || { echo "Nothing to release."; exit 0; }'
-    - echo "Creating GitLab release for $NEW_TAG..."
-    - glab release create "$NEW_TAG" --ref "$CI_DEFAULT_BRANCH" --notes "Automated release $NEW_TAG. See CHANGELOG.md for details."
+    - '[ "$bumped" = "true" ] || { echo "Nothing to release."; exit 0; }'
+    - echo "Creating GitLab release for v$version..."
+    - NOTES=$(cat release_notes.md 2>/dev/null || echo "Automated release v$version.")
+    - glab release create "v$version" --ref "$CI_DEFAULT_BRANCH" --notes "$NOTES"

@@ -1,6 +1,6 @@
 # Working with Claude Code
 
-In 2026, a coding agent is part of the toolchain. This project is set up to be developed
+In 2026, a coding agent is part of the development toolchain. This project is set up to be developed
 with [Claude Code](https://code.claude.com/docs/en/overview), Anthropic's agentic CLI, and
 this page captures the high-level practices for using it well here. It's an *overview, not a
 manual* — see the [official docs](https://code.claude.com/docs/en/best-practices) for depth.
@@ -12,7 +12,7 @@ curl -fsSL https://claude.ai/install.sh | bash   # macOS / Linux / WSL
 # or: npm install -g @anthropic-ai/claude-code
 ```
 
-Launch `claude` from the project root. On the first run in a new repo, generate the project
+Launch `claude` (`headroom wrap claude` if using `headroom`, see below) from the project root. On the first run in a new repo, generate the project
 memory file:
 
 ```text
@@ -127,4 +127,3 @@ the practices above depend on it:
   the outgoing payload.
 
 If you adopt them, you launch Claude wrapped in the proxy (e.g. `uv run headroom wrap claude`).
-Treat this as a power-user add-on, not a requirement for working on the project.

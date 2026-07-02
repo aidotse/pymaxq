@@ -114,9 +114,6 @@ uv cache clean
 ```
 
 This forces `uv` to empty its internal directory and redownload everything fresh from the network on the next run.
-## Anything else?
-
-Check out the [uv documentation](https://docs.astral.sh/uv/) for more usage options, commands, and configuration options.
 
 ## Security auditing (`uv audit`)
 
@@ -129,3 +126,7 @@ uv run poe audit        # = uv audit --preview-features audit-command
 This checks your resolved dependencies against published advisory databases and fails if a known-vulnerable package is present. It runs in the CI quality gate, so a newly-disclosed vulnerability in even a transitive dependency surfaces on your next pipeline.
 
 *(Note: at the time of writing `uv audit` is a uv preview feature; the task opts in explicitly to silence the experimental warning. If you need a fully stable auditor, `pip-audit` is a drop-in alternative.)*
+
+## Anything else?
+
+Check out the [uv documentation](https://docs.astral.sh/uv/) for more usage options, commands, and configuration options.

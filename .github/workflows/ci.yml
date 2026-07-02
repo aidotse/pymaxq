@@ -1,49 +1,36 @@
-# CI quality gate for DEVELOPING the PyMaxQ template (this repo dogfoods the same
-# toolchain it ships). Logic lives in poe tasks (pyproject.toml); this file is glue.
-# Actions are SHA-pinned (Renovate-maintained) to satisfy zizmor + supply-chain safety.
-name: CI
+name: CI/CD
+
+permissions:
+  contents: read
 
 on:
   pull_request:
   push:
     branches: [main]
 
-permissions:
-  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  quality:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          persist-credentials: false
-      - name: Install uv
-        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
-        with:
-          enable-cache: true
-      - run: uv sync
-      - name: Lint (ruff, mypy, gitleaks, zizmor, hygiene)
-        run: uv run poe lint
-      - name: Generation tests
-        run: uv run poe test
-      - name: Dependency audit (non-blocking — a fresh advisory shouldn't hard-block)
-        run: uv run poe audit
-        continue-on-error: true
+  core-pipeline:
+    uses: ./.github/workflows/reusable-pipeline.yml
+    secrets: inherit # zizmor: ignore[secrets-inherit]
+    with:
+      build_docker: false
+      publish_pypi: false
 
+  # PyMaxQ-specific jobs
   e2e-dogfood:
-    # End-to-end: generate a project from this template, sync it, run its FULL nox
-    # matrix (3.10-3.13) and the Hydra entrypoint. The real proof that a freshly
-    # generated project works across versions.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
           enable-cache: true
       - name: Install Python 3.10-3.13
@@ -54,8 +41,8 @@ jobs:
         working-directory: ../sample
         run: |
           uv sync --all-extras --dev
-          uv run poe test 4                 # single-version run → coverage + exported artifacts
-          uv run poe export-test-artifacts  # badges the docs embed
-          uv run poe test-all               # full nox matrix (3.10-3.13)
-          uv run poe docs                   # prove the shipped mkdocs pipeline builds
-          uv run python scripts/example.py  # prove the Hydra entrypoint runs
+          uv run poe test 4
+          uv run poe export-test-artifacts
+          uv run poe test-all
+          uv run poe docs
+          uv run python scripts/example.py

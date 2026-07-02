@@ -12,12 +12,35 @@
 # Templated content lives under template/; everything outside it (this file,
 # the README, tests/) is for developing the template itself and is never copied.
 _subdirectory: template
+# Exclusions
+_exclude:
+  # Standard Copier exclusions...
+  - "copier.yml"
+  - "~*"
+  - "*.py[co]"
+  # Dynamic CI platform exclusions!
+  - "{% if ci_platform == 'gitlab' %}.github{% endif %}"
+  - "{% if ci_platform == 'github' %}.gitlab-ci.yml{% endif %}"
+  - "{% if ci_platform == 'github' %}docker/ci.base.Dockerfile{% endif %}"
 # Only files ending in .jinja are rendered (suffix stripped); all others are
 # copied verbatim. This keeps files containing literal `${{ }}` (e.g. future
 # GitHub Actions workflows) safe from Jinja's `{{ }}` delimiters.
 _templates_suffix: .jinja
 # Records answers in the generated project so `copier update` works.
 _answers_file: .copier-answers.yml
+
+# Post-generation tasks
+_tasks:
+  - "cp '{{ _src_path }}/renovate.json' 'renovate.json'"
+  - "cp '{{ _src_path }}/noxfile.py' 'noxfile.py'"
+  - "cp '{{ _src_path }}/docs/user-guide.md' 'docs/user-guide.md'"
+  - "mkdir -p .claude && cp '{{ _src_path }}/.claude/statusline.sh' '.claude/statusline.sh'"
+  - "mkdir -p scripts && cp '{{ _src_path }}/scripts/bump.py' 'scripts/bump.py'"
+  # Conditionally copy the reusable workflow
+  - >-
+    {% if ci_platform in ['github', 'both'] %}
+    mkdir -p .github/workflows && cp '{{ _src_path }}/.github/workflows/reusable-pipeline.yml' '.github/workflows/reusable-pipeline.yml'
+    {% endif %}
 
 _message_after_copy: |
   Your project "{{ project_name }}" has been created.

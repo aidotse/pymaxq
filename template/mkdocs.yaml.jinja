@@ -16,33 +16,7 @@ plugins:
 
 nav:
   - Home: index.md
-  - Design & Philosophy: design.md
-  - Getting Started:
-    - Getting Started: getting-started.md
-    - The Contribution Process: process.md
-    - Working with Claude Code: claude-code.md
-    - Tools:
-      - pyproject.toml: pyproject.md
-      - uv: uv.md
-      - Templating (copier): copier.md
-      - precommit: precommit.md
-      - poethepoet: poe.md
-      - Formatting, linting, type checking: linting.md
-      - Unit testing and coverage: testing.md
-      - Dependency hygiene (deptry): deptry.md
-      - Dependency updates (Renovate): renovate.md
-      - Security: security.md
-      - Documentation: documentation.md
-      - Versioning & releases: versioning.md
-      - CI/CD: ci.md
-      - Hydra: hydra.md
-    - FAQ: faq.md
-  - API Reference: reference.md
-  - Development:
-    - Contributing: CONTRIBUTING.md
-    - Coverage: exported/coverage
-    - Tests: exported/pytest.html
-  - License: LICENSE.md
+  - Getting Started: user-guide.md
 
 markdown_extensions:
   - abbr
@@ -68,7 +42,6 @@ extra_javascript:
   - javascripts/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
-
 theme:
   name: material
   logo: assets/dark_blue.svg
@@ -76,20 +49,20 @@ theme:
     repo: fontawesome/brands/git-alt
   font: false
   palette:
+    - scheme: default
+      accent: blue
+      media: "(prefers-color-scheme: light)"
+      primary: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
     - scheme: slate
       accent: blue
       media: "(prefers-color-scheme: dark)"
       primary: amber
       toggle:
-        icon: material/brightness-7
-        name: Switch to light mode
-    - scheme: default
-      accent: blue
-      media: "(prefers-color-scheme: dark)"
-      primary: amber
-      toggle:
         icon: material/brightness-4
-        name: Switch to dark mode
+        name: Switch to light mode
   features:
     - header.autohide
     - navigation.indexes
@@ -116,19 +89,16 @@ theme:
     - tags
 
 extra:
-  version:
-    provider: mike
-    alias: true
   social:
-    - icon: fontawesome/solid/newspaper
-      link: https://www.ai.se/en/newsletter
-    - icon: fontawesome/brands/linkedin
-      link: https://www.linkedin.com/company/aisweden
-    - icon: simple/youtube
-      link: https://www.youtube.com/channel/UC9tI59qEGKS_v1PMfWyGY1Q
     - icon: simple/github
       link: https://github.com/aidotse
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/aisweden
+    - icon: fontawesome/solid/newspaper
+      link: https://www.ai.se/en/newsletter
+    - icon: simple/youtube
+      link: https://www.youtube.com/channel/UC9tI59qEGKS_v1PMfWyGY1Q
     - icon: simple/spotify
       link: https://open.spotify.com/show/7z6xGzWQosx3346tpscfQc?si=81DsYQJVSNOO3diHMzoMFQ&nd=1&dlsi=6833fe515dc047b0
 
-copyright: Copyright &copy; 2025 AI Sweden
+copyright: Copyright © 2026 AI Sweden

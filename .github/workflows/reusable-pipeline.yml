@@ -1,0 +1,285 @@
+# GitHub release pipeline. Mirrors the GitLab version + release stages.
+#
+# CONCEPT (same as GitLab): on push to main, `cz bump` computes the next version from
+# conventional commits. If there is something to release it writes CHANGELOG + tag, and
+# publish/docs/release run as a CONTINUATION (via `needs:`) in this same run -- never via
+# a tag-triggered workflow (a GITHUB_TOKEN-pushed tag would not re-trigger anyway, and the
+# bump commit carries [skip ci]).
+#
+# Actions are SHA-pinned (with a version comment, kept current by Renovate) for supply-chain
+# safety and to satisfy zizmor's unpinned-uses check.
+#
+# REQUIRED SETUP (see docs/getting-started.md):
+#   - Allow the workflow to push to the protected `main` branch (branch-protection bypass
+#     for github-actions[bot], or a PAT in `secrets.RELEASE_TOKEN` used below if set).
+#   - Enable GitHub Pages with source = `gh-pages` branch.
+#   - Publishing: by default uses PyPI OIDC Trusted Publishing (configure a trusted
+#     publisher on PyPI; no secrets needed). To publish to a private index instead, set
+#     repo variable PUBLISH_TARGET=private-index and secrets PRIVATE_INDEX_{URL,USERNAME,PASSWORD}.
+
+# ARCHITECTURE NOTE: GITHUB vs. GITLAB PARADIGMS
+# Unlike the GitLab CI pipeline—which relies on a "Container-First" approach
+# (building and pulling a custom `ci.base.Dockerfile` to provide tools like `uv`)—
+# this GitHub workflow uses a "Runner-First + Tool Cache" approach.
+#
+# Jobs execute directly on the `ubuntu-latest` VM. We leverage the highly optimized
+# `astral-sh/setup-uv` action to pull pre-compiled binaries from GitHub's local
+# network cache in 1-2 seconds. This SOTA approach is significantly faster on
+# GitHub infrastructure than pulling and extracting custom Docker base images.
+# ==============================================================================
+
+name: CI/CD
+
+on:
+  workflow_call:
+    inputs:
+      build_docker:
+        description: "Build and push a Docker image to GitHub Container Registry"
+        required: false
+        type: boolean
+        default: false
+      publish_pypi:
+        description: "Publish the package to PyPI (or private index)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # Save compute on PRs, but never interrupt a deployment on the default branch
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  # ==========================================
+  #  QUALITY GATE (Runs on PRs and Main)
+  # ==========================================
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras --dev
+      - name: Lint, format & type-check
+        run: uv run poe lint
+      - name: Dependency hygiene
+        run: uv run poe deps-check
+      - name: Security audit
+        run: uv run poe audit
+        continue-on-error: true
+      - name: Tests + coverage
+        run: |
+          uv run poe test 4
+          uv run poe export-test-artifacts
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-artifacts
+          path: docs/exported/
+          retention-days: 1
+
+  test-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: true
+      - name: Run the test matrix
+        run: |
+          uv sync --all-extras --dev
+          uv run poe test-all
+
+  # ==========================================
+  #  VERSION (Runs ONLY on Main, AFTER Quality Gate)
+  # ==========================================
+  bump:
+    needs: [quality, test-matrix]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      bumped: ${{ steps.cz.outputs.bumped }}
+      version: ${{ steps.cz.outputs.version }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4  # zizmor: ignore[artipacked]
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: true
+      - run: uv sync
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Bump version from conventional commits
+        id: cz
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: uv run poe bump "$GITHUB_OUTPUT"
+
+  # ==========================================
+  #  RELEASE (Runs ONLY if Bumped)
+  # ==========================================
+  publish:
+    needs: bump
+    if: inputs.publish_pypi == true && needs.bump.outputs.bumped == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: "v${{ needs.bump.outputs.version }}"
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+      - name: Build
+        run: uv build
+      - name: Publish to PyPI
+        if: vars.PUBLISH_TARGET == '' || vars.PUBLISH_TARGET == 'pypi-oidc'
+        run: uv publish
+      - name: Publish to a private index
+        if: vars.PUBLISH_TARGET == 'private-index'
+        env:
+          UV_PUBLISH_USERNAME: ${{ secrets.PRIVATE_INDEX_USERNAME }}
+          UV_PUBLISH_PASSWORD: ${{ secrets.PRIVATE_INDEX_PASSWORD }}
+          PUBLISH_URL: ${{ vars.PRIVATE_INDEX_URL }}
+        run: uv publish --publish-url "$PUBLISH_URL"
+
+
+  # Docker Build (Mirrors GitLab Optimizations)
+  # - setup-buildx-action: Replaces `docker buildx create` lifecycle management.
+  # - metadata-action: Generates standard OCI labels/tags.
+  # - build-push-action: Maps BuildKit caching (cache-from/to), build-args,
+  #   and provenance directly from the declarative YAML to the Docker daemon.
+  build-and-push-image:
+    needs: bump
+    if: inputs.build_docker == true && needs.bump.outputs.bumped == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: "v${{ needs.bump.outputs.version }}"
+          persist-credentials: false
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}},value=v${{ needs.bump.outputs.version }}
+            type=raw,value=latest
+      - name: Build and push Docker image
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          provenance: false
+          build-args: |
+            VERSION=${{ needs.bump.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache,mode=max
+
+  docs:
+    needs: bump
+    if: needs.bump.outputs.bumped == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: "v${{ needs.bump.outputs.version }}"
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: true
+      - name: Download test artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: test-artifacts
+          path: docs/exported/
+      - name: Build docs
+        run: |
+          uv sync
+          uv run poe docs
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: site
+
+  deploy-docs:
+    needs: docs
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write      # deploy to GitHub Pages
+      id-token: write   # OIDC for the Pages deployment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+
+  github-release:
+    needs: bump
+    if: needs.bump.outputs.bumped == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: v${{ needs.bump.outputs.version }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: true
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.bump.outputs.version }}
+        run: |
+          uv sync
+          NOTES=$(uv run cz changelog "v${VERSION}" --dry-run 2>/dev/null || true)
+          gh release create "v${VERSION}" --title "v${VERSION}" --notes "${NOTES:-Release v${VERSION}}"

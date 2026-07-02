@@ -7,7 +7,7 @@ dependencies and opens small, reviewable merge/pull requests as updates become a
 you upgrade continuously instead of in painful batches.
 
 Renovate is configured by `renovate.json` at the project root. We chose Renovate over
-Dependabot specifically because it works on **both GitLab and GitHub**, matching this
+Dependabot specifically because it works on both GitLab and GitHub, matching this
 template's dual-platform goal.
 
 ## What our config does
@@ -36,6 +36,7 @@ going stale. See [Security](security.md) for why those are pinned.
 
 ## Turning it on
 
+#MM: lets double check that this is included in the getting started guide!
 Renovate needs a runner; the config alone does nothing until you activate it:
 
 - **GitHub**: install the [Mend Renovate app](https://github.com/apps/renovate) on the repo.

@@ -36,7 +36,7 @@ git init && git add -A && git commit -m "chore: initial commit from pymaxq"
 
 From there, everything is a [poe](https://github.com/nat-n/poethepoet) task — `uv run poe lint`,
 `uv run poe test`, `uv run poe test-all`, `uv run poe docs`, and so on. The generated project
-ships its own documentation with a deep-dive page for each tool.
+ships its own starter documentation.
 
 ## Repository settings
 
@@ -61,3 +61,16 @@ copier update     # run from inside the generated project, on a clean git tree
 Copier reads the template + version you last used from `.copier-answers.yml`, re-renders
 against the newest template release, and applies the diff — conflicts surface like a `git
 merge`. Don't delete or hand-edit `.copier-answers.yml`; it's what makes updates work.
+
+## The Contribution Lifecycle
+
+PyMaxQ establishes a strict, predictable development loop. Once your project is generated, here is the standard lifecycle for contributing code:
+
+* **Local Development:** Write your code and tests.
+* **Pre-commit Execution:** When you run `git commit`, the pre-commit hooks intercept the action. They format code (Ruff), check types (Mypy), scan for secrets (Gitleaks), and ensure your commit message follows the Conventional Commits standard.
+* **Manual Fixes:** If a hook fails (e.g., Mypy finds a type error), the commit is aborted. You fix the issue and commit again.
+* **Pull Requests:** Direct commits to the main branch are blocked by default. You push your feature branch and open a PR.
+* **CI Quality Gate:** The PR triggers the CI pipeline, which runs the exact same tooling (`poe lint`, `poe test`, `poe audit`) in a clean environment to ensure no local anomalies slip through.
+* **Release & Versioning:** Once merged to the main branch, the CI pipeline reads your Conventional Commit messages, automatically calculates the next semantic version, generates a changelog, and tags the release.
+
+For deeper insights into how the template itself is built and maintained, refer to the [Developing the template](developing.md) guide.

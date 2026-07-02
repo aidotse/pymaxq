@@ -1,7 +1,7 @@
 # Formatting, Linting, and Static Type Checking
 
 As part of the quality assurance pipeline in this repo, your code is always passed through a formatting, linting, and static type checking process before it can be committed to the repo.
-We use [ruff](https://github.com/astral-sh/ruff) for **both** formatting and linting, and [mypy](https://mypy-lang.org/) for static type checking.
+We use [ruff](https://github.com/astral-sh/ruff) for both formatting and linting, and [mypy](https://mypy-lang.org/) for static type checking.
 
 Ruff is the modern, extremely fast (Rust-based) standard for Python code quality, and it deliberately does two jobs:
 
