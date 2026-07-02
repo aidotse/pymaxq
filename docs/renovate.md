@@ -36,7 +36,6 @@ going stale. See [Security](security.md) for why those are pinned.
 
 ## Turning it on
 
-#MM: lets double check that this is included in the getting started guide!
 Renovate needs a runner; the config alone does nothing until you activate it:
 
 - **GitHub**: install the [Mend Renovate app](https://github.com/apps/renovate) on the repo.
