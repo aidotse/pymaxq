@@ -34,11 +34,11 @@ def render_mkdocs():
     - Linting: linting.md
     - mkdocs: mkdocs.md
     - Poe: poe.md
-    - Pre-commit: pre-commit.md
+    - Pre-commit: precommit.md
     - Pyproject.toml: pyproject.md
     - Renovate: renovate.md
     - Security: security.md
-    - Testing: pytest.md
+    - Testing: testing.md
     - uv: uv.md
     - versioning: versioning.md
   - FAQ: faq.md

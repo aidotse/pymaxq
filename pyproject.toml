@@ -26,6 +26,14 @@ dev = [
     "pre-commit>=4.0.1",
     "commitizen>=3.29.0",
     "mkdocs-material>=9.5.42",
+    "genbadge[tests]>=1.1.1",
+]
+
+
+[project.optional-dependencies]
+# Optional AI/agent tooling for developing this project (e.g. with Claude Code). Install with: `uv sync --extra agent`.
+agent = [
+    "headroom-ai[code,html,mcp,otel,proxy,relevance,reports,spreadsheet]>=0.27.0",
 ]
 
 # Tool configs --------------------------------------------------------------------------------------------------------
@@ -74,12 +82,12 @@ explicit_package_bases = true
 
 [tool.pytest.ini_options]
 addopts = [
-  "-ra",                                   # Show summary of all non-passed tests
-  "--capture=tee-sys",                     # Print stdout/stderr live AND capture for reports
-  "--html=docs/exported/pytest.html",      # Generate a visual HTML test report
-  "--junit-xml=docs/exported/pytest.xml",  # Generate JUnit XML for CI/CD UI integration
-  "--self-contained-html",                 # Embed all CSS/JS in the HTML file for easy sharing/artifacts
-  "--showlocals",                          # Print local variable values in tracebacks on failure
+  "-ra",
+  "--capture=tee-sys",
+  "--html=docs/exported/pytest.html",
+  "--junit-xml=docs/exported/pytest.xml",
+  "--self-contained-html",
+  "--showlocals",
 ]
 testpaths = ["tests"]
 log_cli = true
@@ -113,6 +121,12 @@ args = [
   { name = "cpus", multiple = false, positional = true, default = 1, help = "Number of cpus to use for xdist" },
   { name = "test", multiple = true, positional = true, default = "tests", help = "Unit tests to run" }
 ]
+
+[tool.poe.tasks.export-test-artifacts]
+sequence = [
+  { cmd = "genbadge tests -i docs/exported/pytest.xml -o docs/exported/tests.svg" },
+]
+help = "Generate test badge from pytest XML output"
 
 [tool.poe.tasks.bump]
 cmd = "uv run python scripts/bump.py ${out}"

@@ -76,7 +76,9 @@ def test_no_unrendered_jinja(tmp_path: Path) -> None:
         assert not path.name.endswith(".jinja"), f"unrendered template file: {path}"
         # copier.md documents Copier's template syntax, so it intentionally contains
         # literal `{{ ... }}` examples (it's a plain .md, copied verbatim).
-        if path.name == "copier.md":
+        # reusable-pipeline.yml is copied verbatim (never Jinja-rendered) and uses
+        # docker/metadata-action's own `{{version}}`-style tag templates.
+        if path.name in ("copier.md", "reusable-pipeline.yml"):
             continue
         try:
             text = path.read_text(encoding="utf-8")
@@ -98,7 +100,7 @@ def test_package_dir_is_renamed(tmp_path: Path) -> None:
 def test_package_name_used_in_code(tmp_path: Path) -> None:
     """Imports and Hydra _target_ paths use the underscore package name."""
     out = _generate(tmp_path, HYPHEN)
-    test_file = (out / "test" / "unit" / "test_pipeline.py").read_text()
+    test_file = (out / "tests" / "unit" / "test_pipeline.py").read_text()
     assert "from my_cool_project.pipeline import" in test_file
 
     config = (out / "my_cool_project" / "configs" / "pipeline.yaml").read_text()
@@ -115,7 +117,7 @@ def test_pages_urls_use_project_name_not_package_name(tmp_path: Path) -> None:
     Pinned to gitlab so the host assertion is stable across default changes (per-platform
     host coverage lives in test_repo_and_docs_urls_match_platform)."""
     out = _generate(tmp_path, {**HYPHEN, "ci_platform": "gitlab"})
-    for rel in ("docs/testing.md", "docs/documentation.md", "docs/versioning.md"):
+    for rel in ("mkdocs.yaml", "README.md"):
         text = (out / rel).read_text()
         assert "acme/my-cool-project" in text, f"{rel} should use the slug in URLs"
         assert "my_cool_project" not in text, f"{rel} leaked the package name into a URL"
@@ -161,9 +163,8 @@ def test_readme_ci_badge_matches_platform(tmp_path: Path) -> None:
 
 
 def test_ships_claude_code_assets(tmp_path: Path) -> None:
-    """The generated project ships Claude Code guidance + the executable status-line utility."""
+    """The generated project ships the opt-in, executable Claude Code status-line utility."""
     out = _generate(tmp_path, HYPHEN)
-    assert (out / "docs" / "claude-code.md").is_file()
     statusline = out / ".claude" / "statusline.sh"
     assert statusline.is_file()
     assert statusline.read_text().startswith("#!/usr/bin/env bash")
@@ -253,9 +254,9 @@ def test_ci_platform_selection(tmp_path: Path, platform: str, expect_gitlab: boo
     assert (out / ".gitlab-ci.yml").is_file() is expect_gitlab
 
     gh_ci = (out / ".github" / "workflows" / "ci.yml").is_file()
-    gh_release = (out / ".github" / "workflows" / "release.yml").is_file()
+    gh_reusable = (out / ".github" / "workflows" / "reusable-pipeline.yml").is_file()
     assert gh_ci is expect_github
-    assert gh_release is expect_github
+    assert gh_reusable is expect_github
     if not expect_github:
         assert not (out / ".github").exists(), "no .github dir should be generated"
 

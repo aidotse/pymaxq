@@ -77,6 +77,14 @@ repos:
       - id: commitizen
         stages: [commit-msg]
 
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 1.0.0
+    hooks:
+      - id: mdformat
+        additional_dependencies:
+          - mdformat-mkdocs
+        args: [--wrap, "120"]
+
   # Static security analysis for GitHub Actions workflows (injection, permissions, pinning).
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: v1.26.1

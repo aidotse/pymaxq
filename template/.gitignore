@@ -91,6 +91,7 @@ multirun/
 *.db
 *.sqlite3
 *.sqlite3-journal
+*.tokensave
 
 # ── Logs & local env files ─────────────────────────────────────────────
 *.log

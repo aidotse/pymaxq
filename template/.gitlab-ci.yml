@@ -210,7 +210,7 @@ test-matrix:
 version-bump:
   extends: .cache_consumer
   stage: version
-  needs: ["run-tests", "test-matrix"]
+  needs: ["lint", "deps-check", "run-tests", "test-matrix"]
   rules: *rules_main_only
   script:
     - git remote set-url origin "$HTTPS_REMOTE"
@@ -295,7 +295,6 @@ build-docs:
     - git checkout "v$version"
     - uv sync --frozen
     - uv run poe docs --verbose
-    - git checkout pages
   artifacts:
     paths:
       - public
@@ -303,7 +302,7 @@ build-docs:
 # GitLab Pages deploy job (name is a reserved keyword).
 pages:
   stage: release
-  needs: ["build-docs"]
+  needs: ["build-docs", "version-bump"]
   rules: *rules_main_only
   script:
     - '[ "$bumped" = "true" ] || { echo "Nothing to release."; exit 0; }'

@@ -188,7 +188,7 @@ sequence = [
 help = "Run unit testing and generate coverage report"
 args = [
   { name = "cpus", multiple = false, positional = true, default = 1, help = "Number of cpus to use for xdist" },
-  { name = "test", multiple = true, positional = true, default = "test/unit", help = "Unit tests to run" }
+  { name = "test", multiple = true, positional = true, default = "tests/unit", help = "Unit tests to run" }
 ]
 
 # Run the test suite across all supported Python versions (matrix correctness, no coverage).

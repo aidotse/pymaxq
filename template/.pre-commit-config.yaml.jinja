@@ -71,6 +71,15 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
+
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 1.0.0
+    hooks:
+      - id: mdformat
+        additional_dependencies:
+          - mdformat-mkdocs
+        args: [--wrap, "120"]
+
 {%- if ci_platform in ['github', 'both'] %}
 
   # Static security analysis for GitHub Actions workflows (injection, permissions, pinning).
