@@ -71,32 +71,45 @@ Required project settings (tokens, protected-branch push rights, `GIT_SSL_CAINFO
 
 ## GitHub implementation (`.github/workflows/`)
 
-Two workflows mirror the same concept:
+The same concept, split into a thin entry-point workflow and a reusable workflow that holds every actual job:
 
 > New to GitHub Actions? Key terms
 
 ```
-A **workflow** is a YAML file of **jobs**; each job runs **steps** on a fresh runner. **`needs:`** makes a job wait for
-another, and **`if: needs.bump.outputs.bumped == 'true'`** runs a job only when an upstream job's **output** says a
-release happened (jobs publish `outputs` that downstream jobs read). **`permissions:`** scope a job's automatic
-`GITHUB_TOKEN` to least privilege; **`id-token: write`** turns on OIDC so `uv publish` authenticates to PyPI without a
-stored token (Trusted Publishing). A **PAT** in the `RELEASE_TOKEN` secret is needed only to push past branch
-protection.
+A **workflow** is a YAML file of **jobs**; each job runs **steps** on a fresh runner. A workflow whose only trigger is
+`on: workflow_call` is a **reusable workflow** — it defines no triggers of its own and is instead invoked from another
+workflow via `uses: ./path/to/workflow.yml`, with the caller passing `inputs` and (optionally) `secrets: inherit`.
+**`needs:`** makes a job wait for another, and **`if: needs.bump.outputs.bumped == 'true'`** runs a job only when an
+upstream job's **output** says a release happened (jobs publish `outputs` that downstream jobs read). **`permissions:`**
+scope a job's automatic `GITHUB_TOKEN` to least privilege; **`id-token: write`** turns on OIDC so `uv publish`
+authenticates to PyPI without a stored token (Trusted Publishing). A **PAT** in the `RELEASE_TOKEN` secret is needed
+only to push past branch protection.
 ```
 
-- **`ci.yml`** runs on pull requests and pushes to `main`: a `quality` job (`lint`/`deps-check`/`audit`/`test`) and a
-    `test-matrix` job (`poe test-all`). Every checkout uses `fetch-depth: 0` + `fetch-tags` so hatch-vcs and commitizen
-    can see the tag history. All actions are **SHA-pinned** (with a version comment, Renovate-maintained) and the
-    workflows are written to pass [zizmor](security.md) at default strictness.
-- **`release.yml`** runs on pushes to `main`:
-    - the **`bump`** job runs `cz bump`, pushes the commit + tag, and exposes `bumped` and `version` as job outputs;
-    - **`publish`**, **`docs`**, and **`github-release`** each `needs: bump` and run only
-        `if: needs.bump.outputs.bumped == 'true'`. `publish` does `uv build` then `uv publish`, using PyPI **OIDC Trusted
-        Publishing** by default (tokenless, via `id-token: write`) or a private index when the repo variable
-        `PUBLISH_TARGET=private-index` is set. `docs` deploys the single-version site via the official GitHub Pages
-        Actions (`actions/upload-pages-artifact` + `actions/deploy-pages`) straight from the workflow run, with no
-        `gh-pages` branch; `github-release` creates the release.
-    - **`build-and-push-image`** details TODO
+- **`ci.yml`** is the entry point: it runs on pull requests and pushes to `main`, and contains a single job,
+    `core-pipeline`, which does nothing but `uses: ./.github/workflows/reusable-pipeline.yml` — invoking the reusable
+    workflow below with `build_docker` / `publish_pypi` inputs and `secrets: inherit`. There is no separate
+    `release.yml`; the release-stage jobs live in the same reusable workflow as the quality gate.
+- **`reusable-pipeline.yml`** declares `on: workflow_call` only (it is never triggered directly) and holds every job,
+    structured in the same three phases described above:
+    - **Quality gate** (always runs, on PRs and pushes alike): `quality` (`lint`/`deps-check`/`audit`/`test`) and
+        `test-matrix` (`poe test-all`). Every checkout uses `fetch-depth: 0` + `fetch-tags` so hatch-vcs and commitizen
+        can see the tag history. All actions are **SHA-pinned** (with a version comment, Renovate-maintained) and the
+        workflows are written to pass [zizmor](security.md) at default strictness.
+    - **Version** — the **`bump`** job (`needs: [quality, test-matrix]`, gated
+        `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`) runs `cz bump`, pushes the commit + tag, and
+        exposes `bumped` and `version` as job outputs.
+    - **Release** — **`publish`**, **`build-and-push-image`**, and **`docs`** each `needs: bump` and run only
+        `if: needs.bump.outputs.bumped == 'true'` (`publish` and `build-and-push-image` are additionally gated on the
+        caller-supplied `publish_pypi` / `build_docker` inputs). `publish` does `uv build` then `uv publish`, using PyPI
+        **OIDC Trusted Publishing** by default (tokenless, via `id-token: write`) or a private index when the repo
+        variable `PUBLISH_TARGET=private-index` is set. `build-and-push-image` builds the image with
+        `docker/build-push-action`, using registry-based BuildKit caching (`cache-from`/`cache-to` against a `:buildcache`
+        tag) and pushes to `ghcr.io/${{ github.repository }}`, tagged with the release's semver version and `latest`.
+        `docs` builds the single-version site and uploads it as a Pages artifact; the downstream **`deploy-docs`** job
+        (`needs: docs`) deploys it via the official GitHub Pages Actions (`actions/upload-pages-artifact` +
+        `actions/deploy-pages`) straight from the workflow run, with no `gh-pages` branch. **`github-release`** (also
+        `needs: bump`, same `bumped` gate) creates the release entry.
 
 GitHub-pushed commits/tags don't re-trigger workflows, which (together with `[skip ci]`) prevents loops without a PAT.
 Required settings (workflow write permissions, branch-protection bypass, Pages source, PyPI trusted publisher) are under

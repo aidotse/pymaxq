@@ -116,6 +116,11 @@ tooling, not part of Claude Code, and entirely optional** — none of the practi
 
 - **[RTK](https://github.com/rtk-ai/rtk)** — a `PreToolUse` hook that trims noisy shell output (passing tests,
     boilerplate) before it reaches the model.
-- **[Headroom AI](https://pypi.org/project/headroom-ai/)** — an API-layer proxy that compresses the outgoing payload.
+- **[Headroom AI](https://pypi.org/project/headroom-ai/)** — an API-layer proxy that compresses the outgoing payload. It
+    also runs a pipeline stage called `CacheAligner`: before Headroom sends your prompt to Anthropic, it detects
+    volatile content — dates, timestamps, session identifiers — and relocates it out of the prompt prefix, keeping that
+    prefix byte-stable so the provider's cache keeps hitting instead of being invalidated on every request.
 
-If you adopt them, you launch Claude wrapped in the proxy (e.g. `uv run headroom wrap claude`).
+If you adopt them, you launch Claude wrapped in the proxy (e.g. `uv run headroom wrap claude`). Headroom's own examples
+run its proxy on port `8787`, and a `headroom dashboard` command opens a live view of your token savings, globally,
+per-project, and per-session.

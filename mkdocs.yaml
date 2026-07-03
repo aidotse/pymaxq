@@ -1,6 +1,6 @@
 # ==============================================================================
 # WARNING: AUTO-GENERATED FILE
-# This file is synced from template/mkdocs.yml.jinja via `uv run poe sync`.
+# This file is synced from template/mkdocs.yaml.jinja via `uv run poe sync`.
 # DO NOT MODIFY THIS FILE DIRECTLY!
 # Any changes made here will be overwritten. Make your changes in the template.
 # ==============================================================================
@@ -21,6 +21,8 @@ plugins:
             docstring_style: google
             show_source: true
 
+# Note: docs/user-guide.md is the generated project's own Getting Started page. PyMaxQ's own docs site uses
+# docs/getting-started.md instead and intentionally omits user-guide.md from its nav (see docs/developing.md).
 nav:
   - Home: index.md
   - Getting Started: getting-started.md

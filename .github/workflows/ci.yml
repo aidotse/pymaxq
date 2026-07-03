@@ -16,6 +16,7 @@ jobs:
 
   enforce-sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -57,7 +58,10 @@ jobs:
       - name: Install Python 3.10-3.13
         run: uv python install 3.10 3.11 3.12 3.13
       - name: Generate a sample project from HEAD
-        run: uvx copier copy --defaults --data-file tests/answers.yml --vcs-ref HEAD . ../sample
+        # --trust is required because copier.yml's `_tasks` copy shared files post-render;
+        # the source must be an absolute path (not ".") or those `_tasks` `cp` commands
+        # can't resolve `_src_path`.
+        run: uvx copier copy --trust --defaults --data-file tests/answers.yml --vcs-ref HEAD "$(pwd)" ../sample
       - name: Sync, run full nox matrix, build docs, run entrypoint
         working-directory: ../sample
         run: |

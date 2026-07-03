@@ -82,7 +82,18 @@ author:
 email:
   type: str
   help: Author email address
-  validator: "{% if '@' not in email or '.' not in email %}Enter a valid email address.{% endif %}"
+  # Jinja2's SandboxedEnvironment (as configured by Copier) has no regex filter/test
+  # built in, and adding one would require a `jinja_extensions:` entry (a Python
+  # plugin) -- overkill for one field. This hand-rolled check enforces the same shape
+  # as `^[^@\s]+@[^@\s]+\.[^@\s]+$` using plain string methods instead.
+  validator: >-
+    {% if not email %}Email is required.
+    {% elif email.count('@') != 1 %}Enter a valid email address (must contain exactly one @).
+    {% elif ' ' in email %}Enter a valid email address (no spaces).
+    {% elif email.split('@')[0] == '' %}Enter a valid email address (missing name before @).
+    {% elif '.' not in email.split('@')[1] %}Enter a valid email address (missing domain, e.g. .com).
+    {% elif email.split('@')[1].startswith('.') or email.split('@')[1].endswith('.') %}Enter a valid email address (invalid domain).
+    {% endif %}
 
 group:
   type: str

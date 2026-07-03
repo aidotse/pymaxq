@@ -261,5 +261,51 @@ def test_ci_platform_selection(tmp_path: Path, platform: str, expect_gitlab: boo
         assert not (out / ".github").exists(), "no .github dir should be generated"
 
 
+@pytest.mark.parametrize(
+    "bad_project_name",
+    ["My-Cool-Project", "my cool project", ""],
+)
+def test_project_name_validator_rejects_invalid(tmp_path: Path, bad_project_name: str) -> None:
+    """Uppercase, spaces, and empty values are all rejected by the project_name validator."""
+    with pytest.raises(ValueError, match="project_name"):
+        _generate(tmp_path, {**HYPHEN, "project_name": bad_project_name})
+
+
+def test_project_name_validator_accepts_valid(tmp_path: Path) -> None:
+    out = _generate(tmp_path, {**HYPHEN, "project_name": "my-cool-project"})
+    assert (out / ".copier-answers.yml").is_file()
+
+
+@pytest.mark.parametrize(
+    "bad_package_name",
+    ["My_Cool_Project", "my-cool-project", "my cool project"],
+)
+def test_package_name_validator_rejects_invalid(tmp_path: Path, bad_package_name: str) -> None:
+    """Uppercase, hyphens, and spaces are all rejected by the package_name validator."""
+    with pytest.raises(ValueError, match="package_name"):
+        _generate(tmp_path, {**HYPHEN, "package_name": bad_package_name})
+
+
+def test_package_name_validator_accepts_valid(tmp_path: Path) -> None:
+    out = _generate(tmp_path, {**HYPHEN, "package_name": "my_cool_project"})
+    assert (out / "my_cool_project").is_dir()
+
+
+@pytest.mark.parametrize(
+    "bad_email",
+    ["bad-email", "a@b", "@.", ""],
+)
+def test_email_validator_rejects_invalid(tmp_path: Path, bad_email: str) -> None:
+    """Missing @, missing domain dot, and empty values are all rejected by the email validator."""
+    with pytest.raises(ValueError, match="email"):
+        _generate(tmp_path, {**HYPHEN, "email": bad_email})
+
+
+def test_email_validator_accepts_valid(tmp_path: Path) -> None:
+    out = _generate(tmp_path, {**HYPHEN, "email": "ada@example.com"})
+    answers = (out / ".copier-answers.yml").read_text()
+    assert "ada@example.com" in answers
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

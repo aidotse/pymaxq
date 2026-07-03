@@ -29,4 +29,6 @@ def tests(session: nox.Session) -> None:
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
     # Matrix = pass/fail only: drop the coverage/artifact addopts defined in pyproject.
-    session.run("pytest", "-n", "auto", "tests/unit", "-o", "addopts=-ra")
+    # "tests" (not "tests/unit") so this file works unmodified both here (root's tests
+    # live flat under tests/) and copied verbatim into generated projects (tests/unit/).
+    session.run("pytest", "-n", "auto", "tests", "-o", "addopts=-ra")

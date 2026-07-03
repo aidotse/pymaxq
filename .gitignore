@@ -1,6 +1,6 @@
 # ==============================================================================
 # WARNING: AUTO-GENERATED FILE
-# This file is synced from template/mkdocs.yml.jinja via `uv run poe sync`.
+# This file is synced from template/.gitignore via `uv run poe sync`.
 # DO NOT MODIFY THIS FILE DIRECTLY!
 # Any changes made here will be overwritten. Make your changes in the template.
 # ==============================================================================
@@ -10,7 +10,6 @@
 mkdocs.yaml
 docs/index.md
 docs/license.md
-
 
 # ── uv / virtual environments ──────────────────────────────────────────
 .venv/

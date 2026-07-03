@@ -23,8 +23,11 @@ def render_precommit():
 exclude: '^template/'\n
 """
 
-    # 3. Write out the final config to the root directory
-    Path(".pre-commit-config.yaml").write_text(HEADER + rendered)
+    # 3. Write out the final config to the root directory. Normalize to exactly one
+    # trailing newline so re-running sync doesn't drift against the committed file
+    # (which pre-commit's end-of-file-fixer also normalizes to one trailing newline).
+    content = (HEADER + rendered).rstrip("\n") + "\n"
+    Path(".pre-commit-config.yaml").write_text(content)
     print("Successfully rendered .pre-commit-config.yaml from template!")
 
 

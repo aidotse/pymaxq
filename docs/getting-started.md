@@ -9,6 +9,11 @@ uv tool install copier
 copier copy https://github.com/aidotse/pymaxq path/to/my-project
 ```
 
+> **Note:** Generation requires a POSIX shell (Linux, macOS, or WSL/Git Bash on Windows) — `copier.yml`'s
+> post-generation tasks run raw shell commands (`cp`, `mkdir -p`) that don't work in a native Windows shell. Because
+> these tasks are unsafe, `copier copy` will also prompt to trust the template (or fail without `--trust` in
+> non-interactive use).
+
 Copier asks a short set of questions and renders the template accordingly:
 
 | Prompt             | Meaning                                                                               |

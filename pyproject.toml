@@ -27,6 +27,9 @@ dev = [
     "commitizen>=3.29.0",
     "mkdocs-material>=9.5.42",
     "genbadge[tests]>=1.1.1",
+    "deptry>=0.20.0",
+    "nox>=2024.4.15",
+    "jinja2>=3.1.6",
 ]
 
 
@@ -80,6 +83,18 @@ show_error_context = true
 show_traceback = true
 explicit_package_bases = true
 
+# Dependency hygiene: flags unused / missing / transitive / misplaced dependencies.
+[tool.deptry]
+extend_exclude = [
+  "template",     # unrendered Jinja — scanned as part of the generated project instead
+  "noxfile.py",   # dev-only orchestration, not shipped code — don't scan it.
+  "scripts",      # dev-only orchestration (render_*.py, bump.py), not shipped code.
+]
+
+[tool.deptry.per_rule_ignores]
+# headroom-ai is optional agent/dev tooling, intentionally not imported by any module.
+DEP002 = ["headroom-ai"]
+
 [tool.pytest.ini_options]
 addopts = [
   "-ra",
@@ -91,7 +106,6 @@ addopts = [
 ]
 testpaths = ["tests"]
 log_cli = true
-log_cli_level = 10
 
 [tool.commitizen]
 name = "cz_conventional_commits"
@@ -107,10 +121,18 @@ bump_message = "bump: version $current_version → $new_version [skip ci]"
 
 [tool.poe.tasks]
 lint = "pre-commit run --all-files"
+deps-check = "deptry ."
 audit = "uv audit --preview-features audit-command"
 changelog = "cz changelog"
-# Generate a sample project from HEAD into .dogfood-site/ to eyeball output.
-generate = "copier copy --defaults --data-file tests/answers.yml --vcs-ref HEAD . .dogfood-site"
+# Generate a sample project from HEAD into .dogfood-site/ to eyeball output. --trust is
+# required because copier.yml's `_tasks` copy shared files post-render; the source must be
+# an absolute path (not ".") or those `_tasks` `cp` commands can't resolve `_src_path`.
+[tool.poe.tasks.generate]
+shell = "copier copy --trust --defaults --data-file tests/answers.yml --vcs-ref HEAD \"$(pwd)\" .dogfood-site"
+
+[tool.poe.tasks.test-all]
+cmd = "nox -s tests"
+help = "Run tests across all supported Python versions via nox."
 
 [tool.poe.tasks.test]
 sequence = [

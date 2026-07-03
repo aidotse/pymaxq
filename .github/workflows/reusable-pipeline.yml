@@ -47,17 +47,13 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ci-${{ github.ref }}
-  # Save compute on PRs, but never interrupt a deployment on the default branch
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-
 jobs:
   # ==========================================
   #  QUALITY GATE (Runs on PRs and Main)
   # ==========================================
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -85,10 +81,11 @@ jobs:
         with:
           name: test-artifacts
           path: docs/exported/
-          retention-days: 1
+          retention-days: 7
 
   test-matrix:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -111,6 +108,7 @@ jobs:
     needs: [quality, test-matrix]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     outputs:
@@ -144,6 +142,7 @@ jobs:
     needs: bump
     if: inputs.publish_pypi == true && needs.bump.outputs.bumped == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       id-token: write
@@ -179,6 +178,7 @@ jobs:
     needs: bump
     if: inputs.build_docker == true && needs.bump.outputs.bumped == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
@@ -221,6 +221,7 @@ jobs:
     needs: bump
     if: needs.bump.outputs.bumped == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -247,6 +248,7 @@ jobs:
   deploy-docs:
     needs: docs
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       pages: write      # deploy to GitHub Pages
       id-token: write   # OIDC for the Pages deployment
@@ -262,6 +264,7 @@ jobs:
     needs: bump
     if: needs.bump.outputs.bumped == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:

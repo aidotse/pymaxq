@@ -54,12 +54,16 @@ def render_mkdocs():
     HEADER = """\
 # ==============================================================================
 # WARNING: AUTO-GENERATED FILE
-# This file is synced from template/mkdocs.yml.jinja via `uv run poe sync`.
+# This file is synced from template/mkdocs.yaml.jinja via `uv run poe sync`.
 # DO NOT MODIFY THIS FILE DIRECTLY!
 # Any changes made here will be overwritten. Make your changes in the template.
 # ==============================================================================\n
 """
-    Path("mkdocs.yaml").write_text(HEADER + content)
+    # Normalize to exactly one trailing newline so re-running sync doesn't drift
+    # against the committed file (which pre-commit's end-of-file-fixer also
+    # normalizes to one trailing newline).
+    final_content = (HEADER + content).rstrip("\n") + "\n"
+    Path("mkdocs.yaml").write_text(final_content)
     print("Successfully rendered mkdocs.yaml from template/mkdocs.yaml.jinja!")
 
 
