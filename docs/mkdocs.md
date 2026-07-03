@@ -7,8 +7,8 @@ static site. The navigation is defined under the `nav:` key in `mkdocs.yaml`, so
 ## API reference from docstrings (mkdocstrings)
 
 In addition to hand-written pages, the [mkdocstrings](https://mkdocstrings.github.io/) plugin generates API
-documentation directly from your source code's Google-style docstrings. The [API Reference](reference.md) page is as
-simple as a one-line directive per module:
+documentation directly from your source code's Google-style docstrings. The API Reference page is as simple as a
+one-line directive per module:
 
 ```markdown
 ::: your_package.your_module

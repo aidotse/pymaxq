@@ -64,4 +64,4 @@ drift. You can print the current version at any time with `uv run poe get-latest
 
 The documentation site is **single-version**: each release rebuilds and replaces the published site (there is no
 per-version archive). It deploys automatically as part of the same release pipeline — via the GitHub Pages Actions on
-GitHub, or the reserved `pages` job on GitLab. See [Documentation](documentation.md) and [CI/CD](ci.md) for the details.
+GitHub, or the reserved `pages` job on GitLab. See [Documentation](mkdocs.md) and [CI/CD](ci.md) for the details.

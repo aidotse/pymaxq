@@ -26,6 +26,7 @@ dev = [
     "pre-commit>=4.0.1",
     "commitizen>=3.29.0",
     "mkdocs-material>=9.5.42",
+    "mkdocstrings[python]>=0.26.0",
     "genbadge[tests]>=1.1.1",
     "deptry>=0.20.0",
     "nox>=2024.4.15",
