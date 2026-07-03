@@ -48,8 +48,10 @@ template's questions live only in `copier.yml`. Avoiding duplicated truth avoids
 [Conventional Commits](versioning.md) type (`fix:` vs `feat:` vs a breaking change); but once that's written, the
 version math — what number to bump to, the changelog, the tag — is derived automatically, so there's no separate
 "remember to bump the version" decision to get wrong. Dependency updates come from
-[Renovate](https://docs.renovatebot.com/); coverage thresholds, dependency hygiene, and security advisories are *gated*,
-not advisory. You write code and good commit messages — the machine handles the bookkeeping.
+[Renovate](https://docs.renovatebot.com/); coverage thresholds and dependency hygiene are *gated* (a failure blocks the
+merge), while the security audit is deliberately *non-blocking* — a newly-disclosed upstream CVE surfaces in the
+pipeline without wedging unrelated releases, so you triage it rather than have CI break on someone else's advisory. You
+write code and good commit messages — the machine handles the bookkeeping.
 
 **Config over hardcoding.** Runnable behaviour is parametrized with [Hydra](https://hydra.cc/), so experiments and runs
 are reconfigurable from the command line without editing source.
