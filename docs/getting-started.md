@@ -52,7 +52,8 @@ A few things are enabled in the hosting platform's UI (the generated project's o
 - **Protected default branch** with merges via PR/MR (the `no-commit-to-branch` hook enforces this locally; enable
     server-side protection too).
 - A **release token** so CI can push the version bump + tag back to the protected branch.
-- **Pages** source set to the CI deployment, and — on GitHub — a **PyPI Trusted Publisher** if you publish there.
+- On GitHub, a **PyPI Trusted Publisher** if you publish there. (GitHub **Pages** needs no manual setup — CI enables it
+    with source = "GitHub Actions" automatically; on GitLab, Pages is served from the CI deployment.)
 
 ## Stay up to date
 

@@ -148,9 +148,9 @@ configure a [GitLab Renovate runner](https://docs.renovatebot.com/modules/platfo
     (the local `no-commit-to-branch` hook only guards each clone). Then let the release workflow push the bump — either
     add a bypass for `github-actions[bot]`, or create a fine-grained PAT with `contents: write`, store it as the
     `RELEASE_TOKEN` secret (the workflow prefers it over `GITHUB_TOKEN`), and allow it to bypass protection.
-- **Pages**: go to **Settings → Pages** and set **Source** to **GitHub Actions**. Docs are deployed by the official
-    GitHub Pages Actions from the release workflow run — there is no `gh-pages` branch, and only the single current
-    version is published.
+- **Pages**: no manual setup needed — the `deploy-docs` job enables Pages with **Source = GitHub Actions** automatically
+    (via `actions/configure-pages`). Docs are deployed by the official GitHub Pages Actions from the release workflow
+    run — there is no `gh-pages` branch, and only the single current version is published.
 - **Publishing the package**:
     - *Default — PyPI via OIDC Trusted Publishing*: configure a
         [trusted publisher](https://docs.pypi.org/trusted-publishers/) on PyPI for this repo's `release.yml`. No secrets
