@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Bump version, push, and output state for CI.")
     parser.add_argument("out", nargs="?", default="bump.env", help="File to write state variables to")
     args = parser.parse_args()

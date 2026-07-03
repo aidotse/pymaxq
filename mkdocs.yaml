@@ -119,6 +119,8 @@ theme:
     - search.suggest
     - tags
 
+copyright: Copyright © 2026 AI Sweden
+
 extra:
   social:
     - icon: simple/github
@@ -131,5 +133,3 @@ extra:
       link: https://www.youtube.com/channel/UC9tI59qEGKS_v1PMfWyGY1Q
     - icon: simple/spotify
       link: https://open.spotify.com/show/7z6xGzWQosx3346tpscfQc?si=81DsYQJVSNOO3diHMzoMFQ&nd=1&dlsi=6833fe515dc047b0
-
-copyright: Copyright © 2026 AI Sweden

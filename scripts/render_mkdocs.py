@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 
-def render_mkdocs():
+def render_mkdocs() -> None:
     """Reads the template mkdocs.yaml and splices in PyMaxQ's specific configuration."""
     content = Path("template/mkdocs.yaml.jinja").read_text()
 
@@ -13,6 +13,9 @@ def render_mkdocs():
         r'site_description: ".*?"': "site_description: A Copier template for max-quality Python projects.",
         r'site_url: ".*?"': "site_url: https://aidotse.github.io/pymaxq/",
         r'repo_url: ".*?"': "repo_url: https://github.com/aidotse/pymaxq",
+        # PyMaxQ's own site keeps the AI Sweden identity that the template parametrizes/omits.
+        r"copyright: .*": "copyright: Copyright © 2026 AI Sweden",
+        r"name: material": "name: material\n  logo: assets/dark_blue.svg",
     }
 
     for pattern, replacement in replacements.items():
@@ -49,6 +52,24 @@ def render_mkdocs():
     # 3. Splice out the template's nav and inject PyMaxQ's nav
     # This matches from `nav:` up to the next top-level key (markdown_extensions:)
     content = re.sub(r"^nav:.*?(?=\n^[a-z_]+:)", pymaxq_nav, content, flags=re.MULTILINE | re.DOTALL)
+
+    # 3b. Re-add the AI Sweden social footer for PyMaxQ's own site (the template omits
+    # `extra.social` so generated projects don't inherit AI Sweden's socials).
+    social = """
+extra:
+  social:
+    - icon: simple/github
+      link: https://github.com/aidotse
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/aisweden
+    - icon: fontawesome/solid/newspaper
+      link: https://www.ai.se/en/newsletter
+    - icon: simple/youtube
+      link: https://www.youtube.com/channel/UC9tI59qEGKS_v1PMfWyGY1Q
+    - icon: simple/spotify
+      link: https://open.spotify.com/show/7z6xGzWQosx3346tpscfQc?si=81DsYQJVSNOO3diHMzoMFQ&nd=1&dlsi=6833fe515dc047b0
+"""
+    content = content.rstrip("\n") + "\n" + social
 
     # 4. Write the generated file to the root directory
     HEADER = """\

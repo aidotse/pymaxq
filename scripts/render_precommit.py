@@ -3,7 +3,7 @@ from pathlib import Path
 import jinja2
 
 
-def render_precommit():
+def render_precommit() -> None:
     """Renders the template's pre-commit config for the root repository."""
     content = Path("template/.pre-commit-config.yaml.jinja").read_text()
 

@@ -68,7 +68,9 @@ repos:
     rev: v1.17.1
     hooks:
       - id: mypy
-        additional_dependencies: [types-requests]
+        # pytest ships type hints; installing it here makes @pytest.mark.parametrize a
+        # typed decorator under strict mypy (types-requests was unused — no requests dep).
+        additional_dependencies: [pytest]
         exclude: ^docs/
 
   - repo: https://github.com/commitizen-tools/commitizen

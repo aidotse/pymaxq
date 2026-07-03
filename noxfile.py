@@ -17,7 +17,7 @@ nox.options.sessions = ["tests"]
 PYTHON_VERSIONS = ["3.10", "3.11", "3.12", "3.13"]
 
 
-@nox.session(python=PYTHON_VERSIONS)
+@nox.session(python=PYTHON_VERSIONS)  # type: ignore[misc]
 def tests(session: nox.Session) -> None:
     """Run the unit test suite on a single Python version."""
     # Install the project + dev group into nox's uv-managed venv.

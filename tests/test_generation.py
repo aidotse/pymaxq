@@ -48,7 +48,7 @@ HYPHEN = {
 }
 
 
-def _generate(dst: Path, data: dict) -> Path:
+def _generate(dst: Path, data: dict[str, str]) -> Path:
     copier.run_copy(
         str(REPO_ROOT),
         str(dst),
@@ -176,6 +176,40 @@ def test_copier_answers_file_present(tmp_path: Path) -> None:
     answers = out / ".copier-answers.yml"
     assert answers.is_file()
     assert "project_name: my-cool-project" in answers.read_text()
+
+
+def test_ships_py_typed_marker(tmp_path: Path) -> None:
+    """The generated package ships a PEP 561 py.typed marker so downstream consumers
+    get its inline type hints."""
+    out = _generate(tmp_path, HYPHEN)
+    assert (out / "my_cool_project" / "py.typed").is_file()
+
+
+def test_license_names_copyright_holder(tmp_path: Path) -> None:
+    """The generated MIT license carries a copyright line naming the author (the old
+    verbatim template shipped MIT text with no copyright holder at all)."""
+    out = _generate(tmp_path, HYPHEN)
+    license_text = (out / "LICENSE.md").read_text()
+    assert "MIT License" in license_text
+    assert "Copyright (c) 2026 Ada Lovelace" in license_text
+
+
+def test_api_reference_wired_into_nav(tmp_path: Path) -> None:
+    """The mkdocstrings API reference page is listed in the generated site's nav
+    (it previously shipped as an orphan page unreachable from navigation)."""
+    out = _generate(tmp_path, HYPHEN)
+    assert (out / "docs" / "reference.md").is_file()
+    assert "reference.md" in (out / "mkdocs.yaml").read_text()
+
+
+def test_docs_not_branded_with_template_owner(tmp_path: Path) -> None:
+    """Generated projects must not inherit the template owner's (AI Sweden) branding:
+    the copyright names the author and the AI Sweden socials/handles are absent."""
+    out = _generate(tmp_path, HYPHEN)
+    mkdocs = (out / "mkdocs.yaml").read_text()
+    assert "Copyright © 2026 Ada Lovelace" in mkdocs
+    for leaked in ("AI Sweden", "aidotse", "aisweden"):
+        assert leaked not in mkdocs, f"template owner branding leaked into mkdocs.yaml: {leaked}"
 
 
 def test_pymaxq_roundtrip_smoke(tmp_path: Path) -> None:

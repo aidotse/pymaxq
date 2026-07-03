@@ -93,6 +93,7 @@ output = "docs/exported/coverage.xml"
 [tool.mypy]
 explicit_package_bases = true
 ignore_missing_imports = true
+strict = true
 pretty = true
 show_error_context = true
 show_traceback = true
@@ -105,7 +106,6 @@ target-version = "py310"
 [tool.ruff.lint]
 ignore = [
   "PLR",    # pylint recommendations
-  "D104",   # Missing docstring in public package
   "ANN002", # Missing type annotation:  *args
   "ANN003", # Missing type annotation: **kwargs
 ]
@@ -121,13 +121,11 @@ select = [
   "INP",  # flake8-no-pep420
   "PIE",  # flake8-pie
   "PL",   # pylint
+  "ANN",  # flake8-annotations
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
 
 # Conventional-commits driven versioning. Commitizen reads the current version from
 # the latest git tag (version_provider = scm, pairs with hatch-vcs) and, on `cz bump`,

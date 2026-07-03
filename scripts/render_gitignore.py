@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-def render_gitignore():
+def render_gitignore() -> None:
     """Reads the template .gitignore and appends PyMaxQ's internal dev exclusions."""
     base_content = Path("template/.gitignore").read_text()
 
