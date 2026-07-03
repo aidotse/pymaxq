@@ -125,7 +125,10 @@ bump_message = "bump: version $current_version → $new_version [skip ci]"
 # poe tasks are the dev contract — CI calls these, mirroring the generated project.
 
 [tool.poe.tasks]
-lint = "pre-commit run --all-files"
+# SKIP no-commit-to-branch: it's a local commit-time guard (installed via `pre-commit
+# install`); running it in `--all-files` fails whenever CI checks out `main` (e.g. the
+# push-to-main run after a PR merge), with no protection gained.
+lint = { cmd = "pre-commit run --all-files", env = { SKIP = "no-commit-to-branch" } }
 deps-check = "deptry ."
 audit = "uv audit --preview-features audit-command"
 changelog = "cz changelog"
