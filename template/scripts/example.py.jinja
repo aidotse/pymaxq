@@ -12,6 +12,7 @@ logger.add(sys.stdout, format="{time} {level} {message}", filter="example", leve
 
 @hydra.main(version_base=None, config_path="../{{ package_name }}/configs", config_name="pipeline")  # type: ignore[misc]
 def main(config: DictConfig) -> None:
+    """Instantiate the pipeline from the Hydra config and run it."""
     pipeline = instantiate(config, _convert_="all")
     pipeline.run()
 

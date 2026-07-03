@@ -24,6 +24,7 @@ class Upper(Transform):
     """Upper-cases the text."""
 
     def __call__(self, text: str) -> str:
+        """Return ``text`` upper-cased."""
         return text.upper()
 
 
@@ -31,9 +32,11 @@ class Repeat(Transform):
     """Repeats the text ``times`` times, space-separated."""
 
     def __init__(self, times: int = 2) -> None:
+        """Store how many times to repeat the text."""
         self.times = times
 
     def __call__(self, text: str) -> str:
+        """Return ``text`` repeated ``times`` times, space-separated."""
         return " ".join([text] * self.times)
 
 

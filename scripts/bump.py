@@ -1,4 +1,9 @@
 # ruff: noqa: S603, S607
+"""Bump the version from conventional commits and emit release state for CI.
+
+Runs ``cz bump``; on success it writes ``bumped``/``version`` to the output file and pushes
+the commit + tag, otherwise it records ``bumped=false`` so downstream release jobs no-op.
+"""
 
 import argparse
 import subprocess
@@ -7,6 +12,7 @@ from pathlib import Path
 
 
 def main() -> None:
+    """Run ``cz bump``, push the tag on success, and write CI release state to the output file."""
     parser = argparse.ArgumentParser(description="Bump version, push, and output state for CI.")
     parser.add_argument("out", nargs="?", default="bump.env", help="File to write state variables to")
     args = parser.parse_args()

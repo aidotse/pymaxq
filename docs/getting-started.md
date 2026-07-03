@@ -16,14 +16,15 @@ copier copy https://github.com/aidotse/pymaxq path/to/my-project
 
 Copier asks a short set of questions and renders the template accordingly:
 
-| Prompt             | Meaning                                                                               |
-| ------------------ | ------------------------------------------------------------------------------------- |
-| `project_name`     | Project slug (lowercase, hyphens), e.g. `my-awesome-project`. Used in repo/docs URLs. |
-| `package_name`     | Importable package name (defaults to the slug with underscores).                      |
-| `description`      | One-line description.                                                                 |
-| `author` / `email` | Author name and email.                                                                |
-| `group`            | The namespace the repo lives under — GitHub owner/org **or** GitLab group.            |
-| `ci_platform`      | `github` (default), `gitlab`, or `both`.                                              |
+| Prompt             | Meaning                                                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| `project_name`     | Project slug (lowercase, hyphens), e.g. `my-awesome-project`. Used in repo/docs URLs.    |
+| `package_name`     | Importable package name (defaults to the slug with underscores).                         |
+| `description`      | One-line description.                                                                    |
+| `author` / `email` | Author name and email.                                                                   |
+| `group`            | The namespace the repo lives under — GitHub owner/org **or** GitLab group.               |
+| `ci_platform`      | `github` (default), `gitlab`, or `both`.                                                 |
+| `gitlab_host`      | GitLab instance host (self-hosted or `gitlab.com`); only asked for GitLab-only projects. |
 
 **GitHub is the primary host.** With `github` or `both`, the generated repo/docs URLs and the CI-status badge point at
 GitHub; a GitLab-only project uses the GitLab equivalents. For `both`, GitHub is canonical and the GitLab pipeline runs

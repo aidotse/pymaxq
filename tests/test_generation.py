@@ -123,7 +123,7 @@ def test_pages_urls_use_project_name_not_package_name(tmp_path: Path) -> None:
         assert "my_cool_project" not in text, f"{rel} leaked the package name into a URL"
 
     pyproject = (out / "pyproject.toml").read_text()
-    assert "gitlab.mgmt.ai.se/acme/my-cool-project" in pyproject
+    assert "gitlab.com/acme/my-cool-project" in pyproject
 
 
 def test_readme_badges_use_exported_docs_path(tmp_path: Path) -> None:
@@ -222,11 +222,12 @@ def test_pymaxq_roundtrip_smoke(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ("platform", "repo_host", "docs_host", "leaked_host"),
     [
-        ("gitlab", "gitlab.mgmt.ai.se/acme/my-cool-project", "pages.mgmt.ai.se/acme/my-cool-project", "github.com"),
-        ("github", "github.com/acme/my-cool-project", "acme.github.io/my-cool-project", "gitlab.mgmt.ai.se"),
+        # gitlab (no gitlab_host given) defaults to gitlab.com + its Pages scheme (<group>.gitlab.io).
+        ("gitlab", "gitlab.com/acme/my-cool-project", "acme.gitlab.io/my-cool-project", "github.com"),
+        ("github", "github.com/acme/my-cool-project", "acme.github.io/my-cool-project", "gitlab.com"),
         # GitHub is the primary host, so 'both' advertises the GitHub repo/docs URLs even
         # though the GitLab pipeline still runs as a mirror.
-        ("both", "github.com/acme/my-cool-project", "acme.github.io/my-cool-project", "gitlab.mgmt.ai.se"),
+        ("both", "github.com/acme/my-cool-project", "acme.github.io/my-cool-project", "gitlab.com"),
     ],
 )
 def test_repo_and_docs_urls_match_platform(
@@ -252,6 +253,26 @@ def test_repo_and_docs_urls_match_platform(
     assert docs_host in url_lines["Documentation"] and docs_host in url_lines["site_url"]
     for name, line in url_lines.items():
         assert leaked_host not in line, f"{leaked_host} leaked into {name}: {line}"
+
+
+def test_gitlab_self_hosted_host_flows_into_urls(tmp_path: Path) -> None:
+    """A self-hosted gitlab_host flows into the repo/docs URLs, deriving the Pages host
+    (gitlab.<x> -> pages.<x>) instead of the gitlab.com <group>.gitlab.io scheme."""
+    out = _generate(tmp_path, {**HYPHEN, "ci_platform": "gitlab", "gitlab_host": "gitlab.example.com"})
+    pyproject = (out / "pyproject.toml").read_text()
+    mkdocs = (out / "mkdocs.yaml").read_text()
+    assert "gitlab.example.com/acme/my-cool-project" in pyproject
+    assert "pages.example.com/acme/my-cool-project" in mkdocs
+    assert "gitlab.io" not in mkdocs, "self-hosted host must not fall back to the gitlab.com Pages scheme"
+    assert "mgmt.ai.se" not in pyproject, "no hardcoded org host should remain"
+
+
+def test_docs_nav_includes_test_and_coverage_reports(tmp_path: Path) -> None:
+    """The generated site links the exported pytest + coverage HTML reports in its nav."""
+    out = _generate(tmp_path, HYPHEN)
+    mkdocs = (out / "mkdocs.yaml").read_text()
+    assert "exported/pytest.html" in mkdocs
+    assert "exported/coverage/index.html" in mkdocs
 
 
 @pytest.mark.parametrize(

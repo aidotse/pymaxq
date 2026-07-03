@@ -108,6 +108,7 @@ ignore = [
   "PLR",    # pylint recommendations
   "ANN002", # Missing type annotation:  *args
   "ANN003", # Missing type annotation: **kwargs
+  "D104",   # Missing docstring in public package
 ]
 select = [
   "E",    # pycodestyle errors
@@ -122,10 +123,14 @@ select = [
   "PIE",  # flake8-pie
   "PL",   # pylint
   "ANN",  # flake8-annotations
+  "D",    # pydocstyle
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 # Conventional-commits driven versioning. Commitizen reads the current version from
 # the latest git tag (version_provider = scm, pairs with hatch-vcs) and, on `cz bump`,

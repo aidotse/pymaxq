@@ -110,6 +110,12 @@ ci_platform:
   # The GitHub release workflow chooses its publish target at runtime via the
   # PUBLISH_TARGET repo variable (PyPI OIDC by default, or a private index).
 
+gitlab_host:
+  type: str
+  help: GitLab instance host — self-hosted host or gitlab.com (only used for GitLab-only projects)
+  default: gitlab.com
+  when: "{{ ci_platform == 'gitlab' }}"
+
 # --- Computed (not prompted): repo + docs base URLs, branched on the CI platform -------
 # `group` is the GitHub owner/org OR the GitLab group. GitHub is the primary host: for 'both'
 # the canonical repo/docs URLs point to GitHub (the GitLab pipeline still runs as a mirror).
@@ -117,9 +123,9 @@ ci_platform:
 repo_url:
   type: str
   when: false
-  default: "{% if ci_platform in ['github', 'both'] %}https://github.com/{{ group }}/{{ project_name }}{% else %}https://gitlab.mgmt.ai.se/{{ group }}/{{ project_name }}{% endif %}"
+  default: "{% if ci_platform in ['github', 'both'] %}https://github.com/{{ group }}/{{ project_name }}{% else %}https://{{ gitlab_host }}/{{ group }}/{{ project_name }}{% endif %}"
 
 docs_url:
   type: str
   when: false
-  default: "{% if ci_platform in ['github', 'both'] %}https://{{ group }}.github.io/{{ project_name }}{% else %}https://pages.mgmt.ai.se/{{ group }}/{{ project_name }}{% endif %}"
+  default: "{% if ci_platform in ['github', 'both'] %}https://{{ group }}.github.io/{{ project_name }}{% else %}{% if gitlab_host == 'gitlab.com' %}https://{{ group }}.gitlab.io/{{ project_name }}{% else %}https://{{ gitlab_host | replace('gitlab.', 'pages.') }}/{{ group }}/{{ project_name }}{% endif %}{% endif %}"

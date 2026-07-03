@@ -1,7 +1,8 @@
 # Developing the template
 
-This page is for *contributing to PyMaxQ itself* — not for using a generated project. For setup instructions, see
-`user-guide.md`, which apply to both this template as well as its rendered projects.
+This page is for *contributing to PyMaxQ itself* — not for using a generated project. Setup for developing the template
+is below; the end-user setup for a *generated* project lives in `user-guide.md` (shipped into every generated project,
+and deliberately not part of this dev site).
 
 ## Two distinct concerns
 
@@ -24,6 +25,9 @@ project, not for readers of PyMaxQ's own docs site, so it would be out of place 
 ## Dogfooded toolchain
 
 PyMaxQ uses the same tools it ships. Everything is a poe task:
+
+First install [uv](https://docs.astral.sh/uv/) (`curl -LsSf https://astral.sh/uv/install.sh | sh`, or see the uv docs
+for Windows/other methods), then:
 
 ```bash
 uv sync                       # dev env (copier, pytest, ruff, mypy, pre-commit, commitizen)
