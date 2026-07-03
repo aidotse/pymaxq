@@ -40,7 +40,7 @@ A project wired for quality from the first commit:
 - **[mypy](https://mypy-lang.org/)** types
 - **[pytest](https://docs.pytest.org/)** + coverage, live-wired to the docs via CI
 - **[nox](https://nox.thea.codes/)** across Python 3.10–3.13
-- \*\*[deptry](https://github.com/fpgmaas/deptry) for dependency hygiene
+- **[deptry](https://github.com/fpgmaas/deptry)** for dependency hygiene
 - **[renovate](https://docs.renovatebot.com/)** for automatic dependency updates
 - **[hydra](https://hydra.cc/)** for flexible experiment configuration
 - **[poethepoet](https://github.com/nat-n/poethepoet)**, a task runner for running custom tasks specified in your
