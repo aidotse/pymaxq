@@ -117,6 +117,7 @@ Thumbs.db
 *.swp
 *.swo
 .claude/settings.local.json
+.claude/plans/
 .serena/
 .ipynb_checkpoints/
 profile_default/
