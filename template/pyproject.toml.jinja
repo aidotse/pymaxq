@@ -164,6 +164,10 @@ DEP004 = ["pytest"]
 # Run all pre-commit hooks (ruff lint+format, mypy, file hygiene) over the whole repo.
 [tool.poe.tasks.lint]
 cmd = "pre-commit run --all-files"
+# no-commit-to-branch is a local commit-time guard (installed via `pre-commit install`);
+# running it in `--all-files` fails whenever CI checks out `main` (e.g. the push-to-main
+# run after a merge), with no protection gained.
+env = { SKIP = "no-commit-to-branch" }
 help = "Run all linting / formatting / type-check hooks."
 
 # Dependency hygiene check (unused / missing / transitive / misplaced deps).
