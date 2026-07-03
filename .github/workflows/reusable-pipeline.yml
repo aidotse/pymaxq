@@ -12,7 +12,8 @@
 # REQUIRED SETUP (see docs/getting-started.md):
 #   - Allow the workflow to push to the protected `main` branch (branch-protection bypass
 #     for github-actions[bot], or a PAT in `secrets.RELEASE_TOKEN` used below if set).
-#   - Enable GitHub Pages with source = `gh-pages` branch.
+#   - GitHub Pages: nothing to do by hand -- the deploy-docs job below enables Pages
+#     with source = "GitHub Actions" via actions/configure-pages (enablement: true).
 #   - Publishing: by default uses PyPI OIDC Trusted Publishing (configure a trusted
 #     publisher on PyPI; no secrets needed). To publish to a private index instead, set
 #     repo variable PUBLISH_TARGET=private-index and secrets PRIVATE_INDEX_{URL,USERNAME,PASSWORD}.
@@ -256,6 +257,14 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Enable Pages via the API with build_type=workflow (source = "GitHub Actions").
+      # This makes deployment self-configuring: no manual Settings > Pages step, and it
+      # overrides a stale "Deploy from a branch" source that would otherwise make
+      # deploy-pages 404 ("ensure Pages enabled") or "Deployment failed, try again later".
+      - name: Configure Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+        with:
+          enablement: true
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
