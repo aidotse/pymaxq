@@ -48,8 +48,8 @@ _message_after_copy: |
   Next steps:
     cd {{ _copier_conf.dst_path }}
     uv sync                      # create the virtualenv + install dependencies
-    uv run pre-commit install    # install the git hooks
     git init && git add -A && git commit -m "chore: initial commit from pymaxq"
+    uv run pre-commit install    # install the git hooks (after the first commit)
 
 # --- Questions -------------------------------------------------------------
 project_name:

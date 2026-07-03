@@ -34,9 +34,12 @@ as a mirror.
 ```bash
 cd path/to/my-project
 uv sync                      # create the virtualenv + install dependencies
-uv run pre-commit install    # install the git hooks (incl. commit-msg validation)
 git init && git add -A && git commit -m "chore: initial commit from pymaxq"
+uv run pre-commit install    # install the git hooks after the first commit (incl. commit-msg validation)
 ```
+
+> The first commit happens *before* installing hooks: the repo must exist for `pre-commit install`, and committing
+> before the hooks are active avoids the `no-commit-to-branch` guard rejecting your initial commit on `main`.
 
 From there, everything is a [poe](https://github.com/nat-n/poethepoet) task — `uv run poe lint`, `uv run poe test`,
 `uv run poe test-all`, `uv run poe docs`, and so on. The generated project ships its own starter documentation.
