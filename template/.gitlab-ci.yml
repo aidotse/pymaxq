@@ -35,6 +35,8 @@ stages:
 variables:
   HTTPS_REMOTE: https://oauth2:$CI_REPO_ACCESS@$CI_SERVER_HOST/$CI_PROJECT_PATH.git
   GIT_DEPTH: 0
+  # Hide GPUs from CI jobs: these pipelines often run on shared self-hosted GPU runners, and
+  # this keeps test/build jobs off the GPU (deterministic, no contention). Drop it if not.
   CUDA_VISIBLE_DEVICES: ""
   UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
   UV_LINK_MODE: "copy"
@@ -93,6 +95,7 @@ build-ci-image:
   script:
     - echo "Building custom CI image from docker/ci.base.Dockerfile..."
     - |
+      # provenance off: the attestation manifest index breaks pulls on many self-hosted registries.
       docker buildx build --push \
         --provenance=false \
         --secret id=internal_ca,src="${GIT_SSL_CAINFO}" \
@@ -269,6 +272,7 @@ build-and-push-image:
     - docker buildx inspect --bootstrap
     # NOTE: for private dependencies, add uv index build secrets here (see docker/Dockerfile).
     - |
+      # provenance off: the attestation manifest index breaks pulls on many self-hosted registries.
       docker buildx build --push \
         --provenance=false \
         --secret id=internal_ca,src="${GIT_SSL_CAINFO}" \

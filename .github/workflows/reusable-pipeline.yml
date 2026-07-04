@@ -1,5 +1,12 @@
 # GitHub release pipeline. Mirrors the GitLab version + release stages.
 #
+# THIS FILE SHIPS. It is dual-purpose: it runs the template repo's own CI *and* is copied
+# verbatim into every generated GitHub project via a copier.yml `_tasks` entry. It is not a
+# `.jinja` file and does not live under `template/`, so editing it silently changes every
+# generated project. Keep it generic — no template-repo-specific logic. Behaviour is toggled by the
+# caller (see .github/workflows/ci.yml here, and template/.github/workflows/ci.yml.jinja in
+# generated projects) via the build_docker / publish_pypi inputs below.
+#
 # CONCEPT (same as GitLab): on push to main, `cz bump` computes the next version from
 # conventional commits. If there is something to release it writes CHANGELOG + tag, and
 # publish/docs/release run as a CONTINUATION (via `needs:`) in this same run -- never via
@@ -210,6 +217,9 @@ jobs:
           context: .
           file: docker/Dockerfile
           push: true
+          # Provenance attestation is disabled: it produces a multi-arch image index that
+          # many private/self-hosted registries (and the GitLab mirror) reject. Re-enable if
+          # your registry supports OCI attestation manifests and you want SLSA provenance.
           provenance: false
           build-args: |
             VERSION=${{ needs.bump.outputs.version }}

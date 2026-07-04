@@ -181,6 +181,38 @@ def test_ships_task_copied_files(tmp_path: Path) -> None:
         assert (out / rel).is_file(), f"{rel} should be copied into the project by a _tasks entry"
 
 
+def test_reusable_pipeline_is_generic(tmp_path: Path) -> None:
+    """reusable-pipeline.yml is dual-purpose: it runs THIS repo's CI and is copied verbatim
+    into every generated GitHub project (via a copier.yml `_tasks` entry, not rendered). It
+    must therefore stay project-agnostic -- driven only by its workflow_call inputs and
+    generic `github.*` contexts. This guards against a contributor wiring pymaxq-specific
+    logic (the template-repo-only jobs, the project/owner slug) into the shipped copy.
+
+    Uses the hyphenated fixture so a leaked project/package name is detectable by value."""
+    out = _generate(tmp_path, {**HYPHEN, "ci_platform": "github"})
+    text = (out / ".github" / "workflows" / "reusable-pipeline.yml").read_text()
+
+    # Template-repo-only jobs live in this repo's caller (.github/workflows/ci.yml), never
+    # in the shared reusable pipeline.
+    # Project identity must come from `github.repository` at runtime, never be baked in.
+    for token in (
+        "enforce-sync",
+        "e2e-dogfood",
+        "dogfood",
+        "pymaxq",
+        "aidotse",
+        "my-cool-project",
+        "my_cool_project",
+        "acme",
+    ):
+        assert token not in text, f"reusable-pipeline.yml leaked project-specific token: {token!r}"
+
+    # Positive: it is genuinely parameterised by its inputs and generic contexts.
+    assert "inputs.build_docker" in text
+    assert "inputs.publish_pypi" in text
+    assert "github.repository" in text
+
+
 def test_copier_answers_file_present(tmp_path: Path) -> None:
     """The answers file must be written so `copier update` works."""
     out = _generate(tmp_path, HYPHEN)
