@@ -9,6 +9,25 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
+from typing import Literal
+
+# Commitizen exit codes meaning "no release-worthy commits" (NoneIncrementExit / NoCommitsFoundError).
+# Treated as a clean no-op rather than a failure so downstream release jobs simply skip.
+CZ_NO_RELEASE_CODES = (3, 21)
+
+
+def release_decision(rc: int) -> Literal["bump", "skip", "fail"]:
+    """Map a ``cz bump`` exit code to a release action.
+
+    Pure function (no side effects) so the exit-code contract can be unit-tested: ``0`` means a
+    version was bumped, commitizen's no-eligible-commits codes mean skip, anything else is a real
+    failure that must abort the pipeline.
+    """
+    if rc == 0:
+        return "bump"
+    if rc in CZ_NO_RELEASE_CODES:
+        return "skip"
+    return "fail"
 
 
 def _explain_push_failure() -> None:
@@ -41,8 +60,9 @@ def main() -> None:
     # We do not use capture_output=True so that the user/CI still sees cz's standard logs
     result = subprocess.run(["cz", "bump", "--yes"], check=False)
     rc = result.returncode
+    decision = release_decision(rc)
 
-    if rc == 0:
+    if decision == "bump":
         # Get the newly created tag
         tag_proc = subprocess.run(
             ["git", "describe", "--tags", "--abbrev=0"], text=True, capture_output=True, check=True
@@ -63,7 +83,7 @@ def main() -> None:
             _explain_push_failure()
             sys.exit(exc.returncode)
 
-    elif rc in (3, 21):
+    elif decision == "skip":
         print(f"No release-worthy commits (cz exit {rc}); skipping release.")
         with open(out_file, "a") as f:
             f.write("bumped=false\n")
