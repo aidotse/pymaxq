@@ -8,6 +8,9 @@
 # 3. `build_docker` and `publish_pypi` are hardcoded `true` (there is no matching Copier
 #    question) so Docker build + PyPI publish are always on, same as the unconditional
 #    release-stage jobs in the GitLab pipeline. Flip these by hand if you need to opt out.
+# 4. The reusable-pipeline.yml this calls is NOT rendered from template/ — it's copied in
+#    verbatim by a copier.yml post-copy `_task`, so you won't find it next to this file in
+#    the template tree; it appears in .github/workflows/ only after generation.
 # ==============================================================================
 name: CI/CD
 

@@ -170,6 +170,49 @@ def test_ships_claude_code_assets(tmp_path: Path) -> None:
     assert os.access(statusline, os.X_OK), "statusline.sh should ship executable"
 
 
+def test_ships_task_copied_files(tmp_path: Path) -> None:
+    """The `_tasks` in copier.yml `cp` five files into the generated project from the
+    template repo root (`_src_path`), not from `template/`, so no `.jinja` rendering or
+    `_exclude` guard protects them. A rename/move at the repo root would silently ship a
+    project missing these; statusline.sh and reusable-pipeline.yml are covered elsewhere,
+    so this pins the remaining four."""
+    out = _generate(tmp_path, HYPHEN)
+    for rel in ("renovate.json", "noxfile.py", "docs/user-guide.md", "scripts/bump.py"):
+        assert (out / rel).is_file(), f"{rel} should be copied into the project by a _tasks entry"
+
+
+def test_reusable_pipeline_is_generic(tmp_path: Path) -> None:
+    """reusable-pipeline.yml is dual-purpose: it runs THIS repo's CI and is copied verbatim
+    into every generated GitHub project (via a copier.yml `_tasks` entry, not rendered). It
+    must therefore stay project-agnostic -- driven only by its workflow_call inputs and
+    generic `github.*` contexts. This guards against a contributor wiring pymaxq-specific
+    logic (the template-repo-only jobs, the project/owner slug) into the shipped copy.
+
+    Uses the hyphenated fixture so a leaked project/package name is detectable by value."""
+    out = _generate(tmp_path, {**HYPHEN, "ci_platform": "github"})
+    text = (out / ".github" / "workflows" / "reusable-pipeline.yml").read_text()
+
+    # Template-repo-only jobs live in this repo's caller (.github/workflows/ci.yml), never
+    # in the shared reusable pipeline.
+    # Project identity must come from `github.repository` at runtime, never be baked in.
+    for token in (
+        "enforce-sync",
+        "e2e-dogfood",
+        "dogfood",
+        "pymaxq",
+        "aidotse",
+        "my-cool-project",
+        "my_cool_project",
+        "acme",
+    ):
+        assert token not in text, f"reusable-pipeline.yml leaked project-specific token: {token!r}"
+
+    # Positive: it is genuinely parameterised by its inputs and generic contexts.
+    assert "inputs.build_docker" in text
+    assert "inputs.publish_pypi" in text
+    assert "github.repository" in text
+
+
 def test_copier_answers_file_present(tmp_path: Path) -> None:
     """The answers file must be written so `copier update` works."""
     out = _generate(tmp_path, HYPHEN)
@@ -313,6 +356,24 @@ def test_ci_platform_selection(tmp_path: Path, platform: str, expect_gitlab: boo
     assert gh_reusable is expect_github
     if not expect_github:
         assert not (out / ".github").exists(), "no .github dir should be generated"
+
+
+@pytest.mark.parametrize(
+    ("platform", "expect_ci_base"),
+    [("gitlab", True), ("github", False), ("both", True)],
+)
+def test_docker_files_match_platform(tmp_path: Path, platform: str, expect_ci_base: bool) -> None:
+    """The rendered Dockerfile ships on every platform and uses the underscore package name;
+    docker/ci.base.Dockerfile is a GitLab-runner image, so copier.yml's `_exclude` drops it
+    for github-only projects but keeps it for gitlab and both (parallel to the CI-file
+    exclusions in test_ci_platform_selection, which this mirrors for the docker/ dir)."""
+    out = _generate(tmp_path, {**HYPHEN, "ci_platform": platform})
+
+    dockerfile = out / "docker" / "Dockerfile"
+    assert dockerfile.is_file(), "Dockerfile should be generated on every platform"
+    assert "my_cool_project" in dockerfile.read_text(), "Dockerfile should COPY the renamed package"
+
+    assert (out / "docker" / "ci.base.Dockerfile").is_file() is expect_ci_base
 
 
 @pytest.mark.parametrize(

@@ -1,3 +1,10 @@
+# The template repo's OWN CI entrypoint (what runs on this repo, not what ships).
+#
+# It wraps the shared reusable-pipeline.yml — the same file generated projects get — but
+# passes build_docker: false / publish_pypi: false because this repo is a Copier template,
+# not an installable package (`tool.uv package = false` in pyproject.toml): there is no wheel
+# or image to publish. It still bumps the version, cuts a GitHub release, and deploys docs.
+# Two PyMaxQ-specific jobs are added on top: `enforce-sync` and `e2e-dogfood`.
 name: CI/CD
 
 permissions:
@@ -14,6 +21,10 @@ concurrency:
 
 jobs:
 
+  # Root configs (mkdocs.yaml, .pre-commit-config.yaml, .gitignore) are generated from the
+  # template/ source of truth by `poe sync`. This job re-runs it and fails if the tree is
+  # dirty — i.e. someone edited a root config by hand instead of the template, or forgot to
+  # commit the regenerated output. See "Configuration Synchronization" in docs/developing.md.
   enforce-sync:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -47,6 +58,8 @@ jobs:
       packages: write
       pages: write
     uses: ./.github/workflows/reusable-pipeline.yml
+    # `inherit` forwards this repo's secrets (e.g. RELEASE_TOKEN) to the called workflow;
+    # safe here because both files live in this same repo. zizmor flags blanket inherit.
     secrets: inherit # zizmor: ignore[secrets-inherit]
     with:
       build_docker: false
