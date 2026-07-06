@@ -100,9 +100,13 @@ jobs:
           # files) break the build.
           git init -q
           git add -A
+          echo '::group::lint pass 1 (auto-fixers normalise freshly rendered files -- a "Failed / files were modified" line here is EXPECTED and not the gate)'
           uv run poe lint || true
+          echo '::endgroup::'
           git add -A
+          echo '::group::lint pass 2 (the real gate -- must be clean)'
           uv run poe lint
+          echo '::endgroup::'
           uv run poe test 4
           uv run poe export-test-artifacts
           uv run poe test-all

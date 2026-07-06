@@ -81,7 +81,10 @@ repos:
     hooks:
       - id: mdformat
         additional_dependencies:
-          - mdformat-mkdocs
+          # Pin the plugin: an unpinned additional_dependency lets a fresh CI env resolve a
+          # newer mdformat-mkdocs than a cached local env, so markdown that is clean locally
+          # gets reformatted in CI. Renovate bumps this deliberately.
+          - mdformat-mkdocs==5.2.0
         args: [--wrap, "120"]
 
 {%- if ci_platform in ['github', 'both'] %}
