@@ -181,6 +181,28 @@ def test_ships_task_copied_files(tmp_path: Path) -> None:
         assert (out / rel).is_file(), f"{rel} should be copied into the project by a _tasks entry"
 
 
+def test_task_copies_work_from_url_source(tmp_path: Path) -> None:
+    """Regression: the `_tasks` must `cp` from the local template checkout, not the raw
+    source argument. `_src_path` is whatever was passed to `copier copy` -- a filesystem
+    path locally (so `cp` happens to work) but the *remote URL* for `copier copy <url>`,
+    which `cp` cannot read (`cannot stat 'https://.../renovate.json'`). The fix uses
+    `_copier_conf.src_path` (the local template checkout / temp clone).
+
+    The other generation tests pass `str(REPO_ROOT)`, which Copier clones via git but whose
+    URL is still a valid local path -- so they can't catch this. Here we hand Copier a
+    `file://.../.git` URL: git-parseable (forcing a temp clone) yet NOT a path the tasks can
+    `cp` from, mirroring the real remote-URL failure."""
+    if not (REPO_ROOT / ".git").exists():
+        pytest.skip("requires a git checkout to exercise a VCS/URL template source")
+    url = (REPO_ROOT / ".git").as_uri()  # file:///abs/path/.git -> Copier treats this as a git VCS source
+    copier.run_copy(url, str(tmp_path), data=HYPHEN, defaults=True, overwrite=True, unsafe=True, vcs_ref="HEAD")
+    # With the bug these are missing because their `cp` task failed against the URL.
+    for rel in ("renovate.json", "noxfile.py", "docs/user-guide.md", "scripts/bump.py"):
+        assert (tmp_path / rel).is_file(), f"{rel} not copied from a URL template source"
+    assert (tmp_path / ".claude" / "statusline.sh").is_file()
+    assert (tmp_path / ".github" / "workflows" / "reusable-pipeline.yml").is_file()
+
+
 def test_reusable_pipeline_is_generic(tmp_path: Path) -> None:
     """reusable-pipeline.yml is dual-purpose: it runs THIS repo's CI and is copied verbatim
     into every generated GitHub project (via a copier.yml `_tasks` entry, not rendered). It

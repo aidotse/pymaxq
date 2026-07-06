@@ -31,15 +31,18 @@ _answers_file: .copier-answers.yml
 
 # Post-generation tasks
 _tasks:
-  - "cp '{{ _src_path }}/renovate.json' 'renovate.json'"
-  - "cp '{{ _src_path }}/noxfile.py' 'noxfile.py'"
-  - "cp '{{ _src_path }}/docs/user-guide.md' 'docs/user-guide.md'"
-  - "mkdir -p .claude && cp '{{ _src_path }}/.claude/statusline.sh' '.claude/statusline.sh'"
-  - "mkdir -p scripts && cp '{{ _src_path }}/scripts/bump.py' 'scripts/bump.py'"
+  # NB: use `_copier_conf.src_path` (the local template checkout — a temp clone
+  # for VCS sources), NOT `_src_path` (the raw source arg, which is the remote
+  # URL for a `copier copy <url>` and can't be `cp`'d from).
+  - "cp '{{ _copier_conf.src_path }}/renovate.json' 'renovate.json'"
+  - "cp '{{ _copier_conf.src_path }}/noxfile.py' 'noxfile.py'"
+  - "cp '{{ _copier_conf.src_path }}/docs/user-guide.md' 'docs/user-guide.md'"
+  - "mkdir -p .claude && cp '{{ _copier_conf.src_path }}/.claude/statusline.sh' '.claude/statusline.sh'"
+  - "mkdir -p scripts && cp '{{ _copier_conf.src_path }}/scripts/bump.py' 'scripts/bump.py'"
   # Conditionally copy the reusable workflow
   - >-
     {% if ci_platform in ['github', 'both'] %}
-    mkdir -p .github/workflows && cp '{{ _src_path }}/.github/workflows/reusable-pipeline.yml' '.github/workflows/reusable-pipeline.yml'
+    mkdir -p .github/workflows && cp '{{ _copier_conf.src_path }}/.github/workflows/reusable-pipeline.yml' '.github/workflows/reusable-pipeline.yml'
     {% endif %}
 
 _message_after_copy: |
