@@ -85,6 +85,11 @@ repos:
     rev: 1.0.0
     hooks:
       - id: mdformat
+        # CHANGELOG.md is owned by Commitizen, which writes raw commit subjects verbatim.
+        # mdformat would "fix" markdown-special chars in them (e.g. escape `_copier_conf`
+        # to `\_copier_conf`), corrupting the entry and re-dirtying the file after every
+        # `cz bump` -- which then fails the next PR's lint. Let Commitizen own it.
+        exclude: (^|/)CHANGELOG\.md$
         additional_dependencies:
           # Pin the plugin: an unpinned additional_dependency lets a fresh CI env resolve a
           # newer mdformat-mkdocs than a cached local env, so markdown that is clean locally
