@@ -1,9 +1,9 @@
 # ==============================================================================
 # NOTE FOR TEMPLATE CONTRIBUTORS:
-# 1. This file has a `.jinja` extension so GitHub Actions ignores it in the 
+# 1. This file has a `.jinja` extension so GitHub Actions ignores it in the
 #    PyMaxQ repo. Copier will strip the extension when generating the project.
-# 2. We use {% raw %} ... {% endraw %} blocks around native GitHub Actions 
-#    variables (like `{% raw %}${{ github.ref }}{% endraw %}`). This prevents Jinja from confusing 
+# 2. We use {% raw %} ... {% endraw %} blocks around native GitHub Actions
+#    variables (like `{% raw %}${{ github.ref }}{% endraw %}`). This prevents Jinja from confusing
 #    GitHub's syntax with its own and attempting to evaluate it.
 # 3. `build_docker` and `publish_pypi` are hardcoded `true` (there is no matching Copier
 #    question) so Docker build + PyPI publish are always on, same as the unconditional
