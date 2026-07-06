@@ -147,7 +147,7 @@ changelog_incremental = true
 # (and re-bumping). Publishing runs as a continuation of the bump job, not on the tag.
 bump_message = "bump: version $current_version → $new_version [skip ci]"
 
-# Dependency hygiene: flags unused / missing / transitive / misplaced dependencies.
+# Dependency hygiene: flags unused / missing / transitive / misplaced dependencies
 [tool.deptry]
 known_first_party = ["{{ package_name }}"]
 extend_exclude = ["noxfile.py"] # dev-only orchestration, not shipped code — don't scan it.
