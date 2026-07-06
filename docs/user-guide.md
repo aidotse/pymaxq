@@ -81,6 +81,13 @@ uv run pre-commit install
 This installs both the `pre-commit` hooks (see the full list in the pre-commit config) and the `commit-msg` hook that
 validates your commit messages (see below).
 
+> **First commit tip.** Run `uv run poe lint` once *before* your initial commit. Auto-fixing hooks (mdformat,
+> `end-of-file-fixer`, `trailing-whitespace`, `ruff-format`) normalise the freshly rendered files on their first run and
+> report `Failed - files were modified` — that is expected, not an error; just `git add -A` and continue. `poe lint`
+> skips the `no-commit-to-branch` guard, so it works even before you branch off `main`. Install the hooks *after* that
+> first commit: with them installed, `no-commit-to-branch` would block committing on `main`. From then on, do your work
+> on a branch (`git checkout -b feat/initial-setup`) and open a PR — that guard exists to enforce exactly that flow.
+
 ## Conventional commits & versioning
 
 Versioning is **automatic** and driven by your commit messages, so there are no manual version bumps. Write commits in
