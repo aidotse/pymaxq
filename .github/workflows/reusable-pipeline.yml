@@ -21,9 +21,12 @@
 #     for github-actions[bot], or a PAT in `secrets.RELEASE_TOKEN` used below if set).
 #   - GitHub Pages: nothing to do by hand -- the deploy-docs job below enables Pages
 #     with source = "GitHub Actions" via actions/configure-pages (enablement: true).
-#   - Publishing: by default uses PyPI OIDC Trusted Publishing (configure a trusted
-#     publisher on PyPI; no secrets needed). To publish to a private index instead, set
-#     repo variable PUBLISH_TARGET=private-index and secrets PRIVATE_INDEX_{URL,USERNAME,PASSWORD}.
+#   - Publishing (package + Docker image) is OPT-IN via repo variables, so a project that
+#     hasn't set it up never sees a failed pipeline. Package publish runs only when
+#     PUBLISH_TARGET is set: `pypi-oidc` -> PyPI via OIDC Trusted Publishing (configure a
+#     trusted publisher on PyPI; no secrets); `private-index` -> also set variable
+#     PRIVATE_INDEX_URL and secrets PRIVATE_INDEX_{USERNAME,PASSWORD}. The Docker image builds
+#     only when BUILD_DOCKER=true (pushes to ghcr.io via GITHUB_TOKEN; no extra setup).
 
 # ARCHITECTURE NOTE: GITHUB vs. GITLAB PARADIGMS
 # Unlike the GitLab CI pipeline—which relies on a "Container-First" approach
@@ -148,7 +151,11 @@ jobs:
   # ==========================================
   publish:
     needs: bump
-    if: inputs.publish_pypi == true && needs.bump.outputs.bumped == 'true'
+    # Opt-in: runs only when PUBLISH_TARGET is explicitly set to a real target. Unset (the
+    # default) -> skipped, so an unconfigured project never fails. See docs "Publishing".
+    if: >-
+      inputs.publish_pypi == true && needs.bump.outputs.bumped == 'true'
+      && (vars.PUBLISH_TARGET == 'pypi-oidc' || vars.PUBLISH_TARGET == 'private-index')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -166,7 +173,7 @@ jobs:
       - name: Build
         run: uv build
       - name: Publish to PyPI
-        if: vars.PUBLISH_TARGET == '' || vars.PUBLISH_TARGET == 'pypi-oidc'
+        if: vars.PUBLISH_TARGET == 'pypi-oidc'
         run: uv publish
       - name: Publish to a private index
         if: vars.PUBLISH_TARGET == 'private-index'
@@ -184,7 +191,9 @@ jobs:
   #   and provenance directly from the declarative YAML to the Docker daemon.
   build-and-push-image:
     needs: bump
-    if: inputs.build_docker == true && needs.bump.outputs.bumped == 'true'
+    # Opt-in: set repo variable BUILD_DOCKER=true to build/push an image (ghcr via GITHUB_TOKEN,
+    # no extra setup). Unset (the default) -> skipped, so no image and no failed pipeline.
+    if: inputs.build_docker == true && needs.bump.outputs.bumped == 'true' && vars.BUILD_DOCKER == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

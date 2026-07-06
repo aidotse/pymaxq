@@ -18,10 +18,14 @@ rocket launch.
 
 ```bash
 uv tool install copier
-copier copy https://github.com/aidotse/pymaxq my-project
+copier copy --trust https://github.com/aidotse/pymaxq my-project   # --trust: post-gen tasks run shell commands
 cd my-project
-uv sync && uv run pre-commit install
-git init && git add -A && git commit -m "chore: initial commit from pymaxq"
+uv sync
+git init && git add -A
+uv run poe lint                                  # auto-format the freshly rendered files (re-add if it changes any)
+git add -A && git commit -m "feat: initial project scaffold"   # feat -> your first release (v0.1.0)
+uv run pre-commit install                        # enable hooks *after* the first commit
+git checkout -b feat/initial-setup               # main is protected; do further work on branches
 ```
 
 Copier prompts for the project name, package name, description, author, namespace, and`ci_platform` (`github` default /

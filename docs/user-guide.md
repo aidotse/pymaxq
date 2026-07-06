@@ -88,6 +88,30 @@ validates your commit messages (see below).
 > first commit: with them installed, `no-commit-to-branch` would block committing on `main`. From then on, do your work
 > on a branch (`git checkout -b feat/initial-setup`) and open a PR — that guard exists to enforce exactly that flow.
 
+### 5. Publishing (optional)
+
+Out of the box, a merge to your default branch carrying a release-worthy commit (`feat:` / `fix:`) will version, tag,
+update the changelog, cut a release, and **deploy your docs site** — but it will **not** publish your package or a
+Docker image. Those two are **opt-in**, configured per repository so that a project which isn't ready to publish never
+sees a red pipeline. You turn them on by adding repository/CI variables (no code changes); leave a variable unset and
+its job is simply skipped (a clean, green pipeline).
+
+| What             | Enable it with               | Destination                               | Credentials              |
+| ---------------- | ---------------------------- | ----------------------------------------- | ------------------------ |
+| **Docs site**    | *(on by default)*            | GitHub Pages / GitLab Pages               | none (self-configuring)  |
+| **Package**      | variable `PUBLISH_TARGET`    | PyPI, a private index, or GitLab registry | see below                |
+| **Docker image** | variable `BUILD_DOCKER=true` | ghcr.io / GitLab container registry       | none (uses the CI token) |
+
+`PUBLISH_TARGET` values:
+
+- **GitHub** — `pypi-oidc` publishes to PyPI via OIDC Trusted Publishing (no secrets); `private-index` publishes to a
+    custom index (also set `PRIVATE_INDEX_URL` + secrets `PRIVATE_INDEX_USERNAME` / `PRIVATE_INDEX_PASSWORD`). Unset →
+    package publishing is skipped.
+- **GitLab** — set it to any value (e.g. `gitlab-registry`) to publish to the project's built-in PyPI registry via
+    `CI_JOB_TOKEN` (no extra credentials). Unset → skipped.
+
+The exact per-platform UI steps and credentials are in [Repository settings](#repository-settings) below.
+
 ## Conventional commits & versioning
 
 Versioning is **automatic** and driven by your commit messages, so there are no manual version bumps. Write commits in
@@ -119,7 +143,8 @@ Until you take one of those steps, the project stays in the `0.x` series indefin
 
 The `commit-msg` hook rejects non-conforming messages locally. On merge to the default branch, CI runs
 `uv run poe bump`: commitizen computes the next version from the commits since the last tag, updates `CHANGELOG.md`,
-creates the git tag, and publishing follows. If there are no release-worthy commits, nothing is released.
+creates the git tag, deploys the docs, and — if you've opted in (see [Publishing](#5-publishing-optional)) — publishes
+the package and/or Docker image. If there are no release-worthy commits, nothing is released.
 
 You can preview the next changelog locally with `uv run poe changelog`.
 
@@ -158,12 +183,16 @@ configure a [GitLab Renovate runner](https://docs.renovatebot.com/modules/platfo
 - **Pages**: no manual setup needed — the `deploy-docs` job enables Pages with **Source = GitHub Actions** automatically
     (via `actions/configure-pages`). Docs are deployed by the official GitHub Pages Actions from the release workflow
     run — there is no `gh-pages` branch, and only the single current version is published.
-- **Publishing the package**:
-    - *Default — PyPI via OIDC Trusted Publishing*: configure a
-        [trusted publisher](https://docs.pypi.org/trusted-publishers/) on PyPI for this repo's `release.yml`. No secrets
-        required.
-    - *Private index instead*: set repo **variable** `PUBLISH_TARGET=private-index` and **variable** `PRIVATE_INDEX_URL`,
-        plus secrets `PRIVATE_INDEX_USERNAME` / `PRIVATE_INDEX_PASSWORD`.
+- **Publishing the package** — *opt-in; unset `PUBLISH_TARGET` means no package is published*:
+    - *PyPI via OIDC Trusted Publishing*: set repo **variable** `PUBLISH_TARGET=pypi-oidc` and configure a
+        [trusted publisher](https://docs.pypi.org/trusted-publishers/) on PyPI for this repo (workflow file `ci.yml`,
+        environment `pypi` if you use one). No secrets required.
+    - *Private index instead*: set **variable** `PUBLISH_TARGET=private-index` and **variable** `PRIVATE_INDEX_URL`, plus
+        secrets `PRIVATE_INDEX_USERNAME` / `PRIVATE_INDEX_PASSWORD`.
+- **Publishing a Docker image** — *opt-in*: set repo **variable** `BUILD_DOCKER=true`. The image is pushed to
+    `ghcr.io/<owner>/<repo>` using the built-in `GITHUB_TOKEN` (the workflow already grants `packages: write`), so no
+    extra credentials are needed. Newly created packages are private by default — adjust visibility under the repo's
+    **Packages** if you want it public.
 
 ### If On GitLab...
 
@@ -180,5 +209,11 @@ Configure these under **Settings** for your project:
 - **Repository → Protected branches**: protect the default branch and set *Allowed to push* so changes land only via
     merge requests — but allow `CI_REPO_ACCESS` (or Maintainers) to push so the automated bump can land.
 - **Merge requests → Merge checks**: enable `Pipelines must succeed` and `All threads must be resolved`.
+- **Publishing** — *both are off until you set a CI/CD variable, so an unconfigured project never fails*:
+    - *Package*: set variable `PUBLISH_TARGET` (any value, e.g. `gitlab-registry`) to publish to the project's built-in
+        [PyPI registry](https://docs.gitlab.com/ee/user/packages/pypi_repository/) via `CI_JOB_TOKEN` — no extra
+        credentials.
+    - *Docker image*: set variable `BUILD_DOCKER=true` to build and push to the project's built-in
+        [container registry](https://docs.gitlab.com/ee/user/packages/container_registry/) via `CI_JOB_TOKEN`.
 - **Pages**: no UI toggle is needed — GitLab Pages is served by the pipeline's reserved `pages` job, which publishes the
     `public/` directory. The single current version of the docs is served once that job runs on the default branch.
