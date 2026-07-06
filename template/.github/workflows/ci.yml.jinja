@@ -39,4 +39,6 @@ jobs:
     with:
       build_docker: true
       publish_pypi: true
-    secrets: inherit
+    # `inherit` forwards this repo's secrets (e.g. RELEASE_TOKEN) to the called workflow;
+    # safe here because both files live in this same repo. zizmor flags blanket inherit.
+    secrets: inherit # zizmor: ignore[secrets-inherit]
