@@ -51,8 +51,12 @@ _message_after_copy: |
   Next steps:
     cd {{ _copier_conf.dst_path }}
     uv sync                      # create the virtualenv + install dependencies
-    git init && git add -A && git commit -m "chore: initial commit from pymaxq"
-    uv run pre-commit install    # install the git hooks (after the first commit)
+    git init && git add -A       # start tracking the generated files
+    uv run poe lint              # auto-format the freshly rendered files (re-run + re-add if it reports changes)
+    git add -A
+    git commit -m "chore: initial commit from pymaxq"
+    uv run pre-commit install    # after the 1st commit: once installed, no-commit-to-branch blocks commits on main
+    git checkout -b feat/initial-setup   # branch off: main is protected by no-commit-to-branch
 
 # --- Questions -------------------------------------------------------------
 project_name:
