@@ -5,7 +5,9 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-added-large-files
-        args: ['--maxkb=1024']
+        # 2 MB: a full uv.lock for this toolchain already lands ~1 MB and grows as
+        # Renovate bumps the dep tree; 1024 would reject it. Still catches stray blobs.
+        args: ['--maxkb=2048']
       - id: check-ast
       - id: check-builtin-literals
       - id: check-case-conflict
