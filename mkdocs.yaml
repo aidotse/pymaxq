@@ -7,7 +7,7 @@
 
 site_name: PyMaxQ
 site_author: AI Sweden
-site_description: A Copier template for max-quality Python projects
+site_description: A Copier template for max-quality Python projects.
 site_url: https://aidotse.github.io/pymaxq/
 repo_url: https://github.com/aidotse/pymaxq
 site_dir: public
