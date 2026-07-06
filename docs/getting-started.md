@@ -6,7 +6,7 @@ Install [Copier](https://copier.readthedocs.io) once, then generate from the tem
 
 ```bash
 uv tool install copier
-copier copy https://github.com/aidotse/pymaxq path/to/my-project
+copier copy --trust https://github.com/aidotse/pymaxq path/to/my-project
 ```
 
 > **Note:** Generation requires a POSIX shell (Linux, macOS, or WSL/Git Bash on Windows) — `copier.yml`'s
@@ -35,12 +35,20 @@ as a mirror.
 ```bash
 cd path/to/my-project
 uv sync                      # create the virtualenv + install dependencies
-git init && git add -A && git commit -m "chore: initial commit from pymaxq"
-uv run pre-commit install    # install the git hooks after the first commit (incl. commit-msg validation)
+git init && git add -A       # start tracking the generated files
+uv run poe lint              # auto-format the freshly rendered files (re-run + re-add if it reports changes)
+git add -A
+git commit -m "feat: initial project scaffold"   # feat -> your first release (v0.1.0), which deploys docs on push
+uv run pre-commit install    # enable the git hooks for subsequent commits (incl. commit-msg validation)
+git checkout -b feat/initial-setup               # branch off: main is protected by no-commit-to-branch
 ```
 
-> The first commit happens *before* installing hooks: the repo must exist for `pre-commit install`, and committing
-> before the hooks are active avoids the `no-commit-to-branch` guard rejecting your initial commit on `main`.
+> **Why this order.** `uv run poe lint` runs the auto-fixing hooks (mdformat, `end-of-file-fixer`, `ruff-format`) over
+> the freshly rendered files before you commit — it reports `Failed - files were modified` on that first pass, which is
+> expected, so just `git add -A` and continue (it also skips `no-commit-to-branch`, so it works while still on `main`).
+> Install the hooks *after* the initial commit: once installed, `no-commit-to-branch` would block committing on `main`.
+> A `feat:` first commit cuts your first release (`v0.1.0`) on push, so the docs site and release publish immediately —
+> a `chore:`/`docs:` message would produce no release, leaving the docs site and badges empty until your first feature.
 
 From there, everything is a [poe](https://github.com/nat-n/poethepoet) task — `uv run poe lint`, `uv run poe test`,
 `uv run poe test-all`, `uv run poe docs`, and so on. The generated project ships its own starter documentation.
@@ -52,8 +60,11 @@ A few things are enabled in the hosting platform's UI (the generated project's o
 - **Protected default branch** with merges via PR/MR (the `no-commit-to-branch` hook enforces this locally; enable
     server-side protection too).
 - A **release token** so CI can push the version bump + tag back to the protected branch.
-- On GitHub, a **PyPI Trusted Publisher** if you publish there. (GitHub **Pages** needs no manual setup — CI enables it
-    with source = "GitHub Actions" automatically; on GitLab, Pages is served from the CI deployment.)
+- **Publishing is opt-in.** Out of the box CI versions, changelogs, releases, and deploys the docs site, but does
+    **not** publish your package or a Docker image until you opt in with repo variables (`PUBLISH_TARGET`,
+    `BUILD_DOCKER`) — so a project that isn't ready to publish never sees a red pipeline. (GitHub **Pages** needs no
+    manual setup — CI enables it with source = "GitHub Actions" automatically; on GitLab, Pages is served from the CI
+    deployment.) The generated project's own "Publishing" guide spells out the variables and credentials per platform.
 
 ## Stay up to date
 

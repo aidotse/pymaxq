@@ -13,7 +13,7 @@ namespace — GitHub owner/org or GitLab group — and the target CI platform):
 
 ```bash
 uv tool install copier
-copier copy https://github.com/aidotse/pymaxq path/to/my-project
+copier copy --trust https://github.com/aidotse/pymaxq path/to/my-project
 ```
 
 Copier renders the template into your project and records your answers in a `.copier-answers.yml` file at the project

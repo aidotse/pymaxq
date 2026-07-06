@@ -235,7 +235,11 @@ publish-package:
   extends: .cache_consumer
   stage: release
   needs: ["version-bump"]
-  rules: *rules_main_only
+  # Opt-in (mirrors the GitHub pipeline): publish to the built-in GitLab PyPI registry (via
+  # CI_JOB_TOKEN, no extra credentials) only when the PUBLISH_TARGET variable is set. Unset (the
+  # default) -> the job is not created, so a project that isn't ready to publish never fails.
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'push' && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $PUBLISH_TARGET
   script:
     - '[ "$bumped" = "true" ] || { echo "Nothing to release."; exit 0; }'
     - git fetch origin --tags
@@ -254,7 +258,10 @@ build-and-push-image:
   tags:
     - shell
   needs: ["version-bump"]
-  rules: *rules_main_only
+  # Opt-in (mirrors the GitHub pipeline): build/push to the built-in GitLab container registry
+  # (via CI_JOB_TOKEN) only when BUILD_DOCKER=true. Unset -> no job, no image, no failed pipeline.
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'push' && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $BUILD_DOCKER == "true"
   script:
     - '[ "$bumped" = "true" ] || { echo "Nothing to release."; exit 0; }'
     - git fetch origin --tags
