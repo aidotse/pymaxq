@@ -2,7 +2,7 @@
 
 Welcome! This guide walks through the core design principles behind this repo. It is inspired by best practices in the
 software engineering community, and is intended to be general enough by making minimal assumptions on *what* you will be
-coding, focusing rather on *how* to make this process efficient. Of course there are many tools out there that go much
+coding, focusing rather on *how* to make this process efficient. Of course there are many tools out there that go
 further than what is used here; this repo gathers in essence the key ones, aiming to be as much as infrastructure
 agnostic as possible.
 
