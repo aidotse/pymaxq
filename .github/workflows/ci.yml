@@ -86,10 +86,27 @@ jobs:
         # the source must be an absolute path (not ".") or those `_tasks` `cp` commands
         # can't resolve `_src_path`.
         run: uvx copier copy --trust --defaults --data-file tests/answers.yml --vcs-ref HEAD "$(pwd)" ../sample
-      - name: Sync, run full nox matrix, build docs, run entrypoint
+      - name: Sync, lint, run full nox matrix, build docs, run entrypoint
         working-directory: ../sample
         run: |
           uv sync --all-extras --dev
+          # Lint gate: run the generated project's own pre-commit hooks so template
+          # regressions that only surface downstream (e.g. a missing zizmor suppression)
+          # fail CI here instead of in a user's freshly generated repo. pre-commit needs a
+          # git repo, which copier does not create. Two passes: the first lets auto-fixing
+          # hooks (end-of-file-fixer, trailing-whitespace, mdformat) normalise freshly
+          # rendered files -- the same self-healing a user hits on their first commit -- and
+          # the second must be clean, so only non-fixable failures (bad config, oversized
+          # files) break the build.
+          git init -q
+          git add -A
+          echo '::group::lint pass 1 (auto-fixers normalise freshly rendered files -- a "Failed / files were modified" line here is EXPECTED and not the gate)'
+          uv run poe lint || true
+          echo '::endgroup::'
+          git add -A
+          echo '::group::lint pass 2 (the real gate -- must be clean)'
+          uv run poe lint
+          echo '::endgroup::'
           uv run poe test 4
           uv run poe export-test-artifacts
           uv run poe test-all
