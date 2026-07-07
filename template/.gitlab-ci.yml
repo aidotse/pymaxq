@@ -15,8 +15,10 @@
 # tag pipeline -- so we never rely on the tag push to start publishing.
 #
 # REQUIRED SETUP (see docs/getting-started.md):
-#   - CI_REPO_ACCESS: project access token (read+write repo, developer role) able to push
-#     to the protected default branch. Add as a masked, UNPROTECTED CI/CD variable.
+#   - CI_REPO_ACCESS: project access token with the `api` scope (Maintainer role). The `api`
+#     scope is required (not just write_repository): CI both pushes the version-bump commit + tag
+#     to the protected default branch AND creates the GitLab Release via the Releases API (the
+#     latter 403s under a repo-only token). Add as a masked, UNPROTECTED CI/CD variable.
 #   - GIT_SSL_CAINFO: File-type variable with any CA cert needed to reach GitLab.
 
 workflow:
