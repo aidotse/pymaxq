@@ -50,6 +50,13 @@ git checkout -b feat/initial-setup               # branch off: main is protected
 > A `feat:` first commit cuts your first release (`v0.1.0`) on push, so the docs site and release publish immediately —
 > a `chore:`/`docs:` message would produce no release, leaving the docs site and badges empty until your first feature.
 
+> **Before your first release — one-time platform setup.** For a green first pipeline, set two things in your host's UI
+> (both detailed in [Repository settings](#repository-settings)): **(1)** protect the default branch *and* give CI a
+> credential to push the release bump back to it — on GitHub a `RELEASE_TOKEN` secret (or a `github-actions[bot]`
+> bypass), on GitLab a `CI_REPO_ACCESS` token — otherwise the release job can't push and the pipeline fails; and **(2)**
+> on GitHub only, enable Pages (**Settings → Pages → Source: "GitHub Actions"**), which CI cannot do for you, otherwise
+> the docs-deploy job fails. GitLab needs no Pages step.
+
 From there, everything is a [poe](https://github.com/nat-n/poethepoet) task — `uv run poe lint`, `uv run poe test`,
 `uv run poe test-all`, `uv run poe docs`, and so on. The generated project ships its own starter documentation.
 
@@ -62,9 +69,12 @@ A few things are enabled in the hosting platform's UI (the generated project's o
 - A **release token** so CI can push the version bump + tag back to the protected branch.
 - **Publishing is opt-in.** Out of the box CI versions, changelogs, releases, and deploys the docs site, but does
     **not** publish your package or a Docker image until you opt in with repo variables (`PUBLISH_TARGET`,
-    `BUILD_DOCKER`) — so a project that isn't ready to publish never sees a red pipeline. (GitHub **Pages** needs no
-    manual setup — CI enables it with source = "GitHub Actions" automatically; on GitLab, Pages is served from the CI
-    deployment.) The generated project's own "Publishing" guide spells out the variables and credentials per platform.
+    `BUILD_DOCKER`) — so a project that isn't ready to publish never sees a red pipeline. The generated project's own
+    "Publishing" guide spells out the variables and credentials per platform.
+- **GitHub Pages** (GitHub only) — **one-time manual step, before your first release.** Enable Pages under **Settings →
+    Pages → Source: "GitHub Actions"**. CI cannot enable it for you: creating the Pages site needs a permission the
+    default CI token never has (`administration: write`). Until it's enabled the docs-deploy job fails; once enabled it
+    stays enabled and every release publishes. (On GitLab, Pages is served from the CI deployment with no setup.)
 
 ## Stay up to date
 

@@ -96,11 +96,11 @@ Docker image. Those two are **opt-in**, configured per repository so that a proj
 sees a red pipeline. You turn them on by adding repository/CI variables (no code changes); leave a variable unset and
 its job is simply skipped (a clean, green pipeline).
 
-| What             | Enable it with               | Destination                               | Credentials              |
-| ---------------- | ---------------------------- | ----------------------------------------- | ------------------------ |
-| **Docs site**    | *(on by default)*            | GitHub Pages / GitLab Pages               | none (self-configuring)  |
-| **Package**      | variable `PUBLISH_TARGET`    | PyPI, a private index, or GitLab registry | see below                |
-| **Docker image** | variable `BUILD_DOCKER=true` | ghcr.io / GitLab container registry       | none (uses the CI token) |
+| What             | Enable it with               | Destination                               | Credentials                     |
+| ---------------- | ---------------------------- | ----------------------------------------- | ------------------------------- |
+| **Docs site**    | *(on by default)*            | GitHub Pages / GitLab Pages               | GitLab: none. GitHub: see below |
+| **Package**      | variable `PUBLISH_TARGET`    | PyPI, a private index, or GitLab registry | see below                       |
+| **Docker image** | variable `BUILD_DOCKER=true` | ghcr.io / GitLab container registry       | none (uses the CI token)        |
 
 `PUBLISH_TARGET` values:
 
@@ -180,9 +180,11 @@ configure a [GitLab Renovate runner](https://docs.renovatebot.com/modules/platfo
     (the local `no-commit-to-branch` hook only guards each clone). Then let the release workflow push the bump — either
     add a bypass for `github-actions[bot]`, or create a fine-grained PAT with `contents: write`, store it as the
     `RELEASE_TOKEN` secret (the workflow prefers it over `GITHUB_TOKEN`), and allow it to bypass protection.
-- **Pages**: no manual setup needed — the `deploy-docs` job enables Pages with **Source = GitHub Actions** automatically
-    (via `actions/configure-pages`). Docs are deployed by the official GitHub Pages Actions from the release workflow
-    run — there is no `gh-pages` branch, and only the single current version is published.
+- **Pages** — **enable once, by hand, before your first release.** Set **Settings → Pages → Source: "GitHub Actions"**.
+    CI cannot enable Pages for you: creating the site needs `administration: write`, a permission the default
+    `GITHUB_TOKEN` never has. Until you do this the `deploy-docs` job fails; once enabled it stays enabled. Docs are
+    then deployed by the official GitHub Pages Actions from the release workflow run — there is no `gh-pages` branch,
+    and only the single current version is published.
 - **Publishing the package** — *opt-in; unset `PUBLISH_TARGET` means no package is published*:
     - *PyPI via OIDC Trusted Publishing*: set repo **variable** `PUBLISH_TARGET=pypi-oidc` and configure a
         [trusted publisher](https://docs.pypi.org/trusted-publishers/) on PyPI for this repo (workflow file `ci.yml`,

@@ -19,8 +19,10 @@
 # REQUIRED SETUP (see docs/getting-started.md):
 #   - Allow the workflow to push to the protected `main` branch (branch-protection bypass
 #     for github-actions[bot], or a PAT in `secrets.RELEASE_TOKEN` used below if set).
-#   - GitHub Pages: nothing to do by hand -- the deploy-docs job below enables Pages
-#     with source = "GitHub Actions" via actions/configure-pages (enablement: true).
+#   - GitHub Pages: enable it once by hand -- Settings > Pages > Source = "GitHub Actions" --
+#     BEFORE your first release. CI cannot enable Pages itself (creating the site needs
+#     administration:write, which the default GITHUB_TOKEN never has). Until it is enabled the
+#     deploy-docs job fails; once enabled, every release publishes the docs.
 #   - Publishing (package + Docker image) is OPT-IN via repo variables, so a project that
 #     hasn't set it up never sees a failed pipeline. Package publish runs only when
 #     PUBLISH_TARGET is set: `pypi-oidc` -> PyPI via OIDC Trusted Publishing (configure a
@@ -281,9 +283,12 @@ jobs:
       # overrides a stale "Deploy from a branch" source that would otherwise make
       # deploy-pages 404 ("ensure Pages enabled") or "Deployment failed, try again later".
       - name: Configure Pages
+        # Pages must be enabled once by hand: Settings > Pages > Source = "GitHub Actions".
+        # We deliberately do NOT pass `enablement: true` -- creating the Pages site needs
+        # administration:write, which the default GITHUB_TOKEN never has, so CI cannot enable
+        # Pages for you. See the project's Pages setup docs. This step only reads the existing
+        # Pages config to expose the deploy URL to the next step.
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-        with:
-          enablement: true
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
