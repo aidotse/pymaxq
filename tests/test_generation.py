@@ -127,14 +127,29 @@ def test_pages_urls_use_project_name_not_package_name(tmp_path: Path) -> None:
 
 
 def test_readme_badges_use_exported_docs_path(tmp_path: Path) -> None:
-    """The README's coverage/tests badge URLs point at the single-version docs site's
-    `/exported/` artifacts. The deploy publishes one version at the site root (there is
-    no mike `/latest/` alias), so a `/latest/exported/...` path would 404."""
+    """On the GitHub-hosted variant (HYPHEN defaults to `github`), the README's tests/coverage
+    badge URLs point at the single-version docs site's `/exported/` artifacts. The deploy
+    publishes one version at the site root (there is no mike `/latest/` alias), so a
+    `/latest/exported/...` path would 404."""
     out = _generate(tmp_path, HYPHEN)
     readme = (out / "README.md").read_text()
     for artifact in ("tests.svg", "coverage.svg", "pytest.html", "coverage/"):
         assert f"/exported/{artifact}" in readme, f"badge URL for {artifact} missing /exported/ path"
     assert "/latest/exported/" not in readme, "badge URL should not use a mike /latest/ prefix"
+
+
+def test_readme_gitlab_uses_native_coverage_badge(tmp_path: Path) -> None:
+    """On GitLab the coverage badge must be the repo-hosted native badge
+    (`repo_url/badges/main/coverage.svg`), never a Pages-hosted SVG: on a private/internal
+    project the Pages host sits behind access control, so an embedded `<img>` to it 404s. The
+    pipeline badge already reflects test status, so there is no separate Pages tests badge."""
+    gl = (_generate(tmp_path, {**HYPHEN, "ci_platform": "gitlab"}) / "README.md").read_text()
+    assert "/badges/main/coverage.svg" in gl, "GitLab coverage badge should be the native repo-hosted badge"
+    assert "/exported/tests.svg" not in gl, "GitLab must not embed the Pages-hosted tests badge"
+    assert "/exported/coverage.svg" not in gl, "GitLab must not embed the Pages-hosted coverage badge"
+    # The native badge is only populated when the pipeline parses coverage from the job log.
+    gitlab_ci = (_generate(tmp_path / "ci", {**HYPHEN, "ci_platform": "gitlab"}) / ".gitlab-ci.yml").read_text()
+    assert "coverage: '/" in gitlab_ci, ".gitlab-ci.yml run-tests must set a coverage: regex to feed the badge"
 
 
 def test_readme_has_static_badges(tmp_path: Path) -> None:

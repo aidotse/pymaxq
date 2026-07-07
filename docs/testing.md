@@ -12,8 +12,8 @@ consider this as a non-negotiable part of the development cost.
 When building the documentation, both the latest testing and coverage reports are used and uploaded as documentation
 artifacts visible to anyone.
 
-Your coverage report will be available at `<YOUR DOCS URL>/latest/exported/coverage/` and your test results will be
-available at `<YOUR DOCS URL>/latest/exported/pytest.html?sort=result`.
+Your coverage report will be available at `<YOUR DOCS URL>/exported/coverage/` and your test results will be available
+at `<YOUR DOCS URL>/exported/pytest.html?sort=result`.
 
 ## Testing across Python versions (nox)
 
