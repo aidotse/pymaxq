@@ -50,10 +50,12 @@ git checkout -b feat/initial-setup               # branch off: main is protected
 > A `feat:` first commit cuts your first release (`v0.1.0`) on push, so the docs site and release publish immediately —
 > a `chore:`/`docs:` message would produce no release, leaving the docs site and badges empty until your first feature.
 
-> **Before your first release — one-time setup.** For a green first pipeline, in your host's UI: **(1)** protect the
-> default branch and give CI a release-push credential (GitHub `RELEASE_TOKEN`, or a `github-actions[bot]` bypass;
-> GitLab `CI_REPO_ACCESS`) so the release commit can be pushed, and **(2)** on GitHub, enable Pages so the docs deploy.
-> The full per-platform steps and the *why* are in the
+> **Before your first release — one-time setup.** In your host's UI: **(1)** on GitHub, enable Pages (**Settings → Pages
+> → Source: "GitHub Actions"**), or the docs-deploy job fails; and **(2)** once you protect the default branch
+> (recommended — the shipped `no-commit-to-branch` hook and PR workflow assume it), give CI a way to push the release
+> commit past that protection — a release-push credential (GitHub `RELEASE_TOKEN`, or a `github-actions[bot]` bypass;
+> GitLab `CI_REPO_ACCESS`). Leave `main` unprotected and the default CI token pushes the release itself, but then it
+> isn't protected. The full per-platform steps and the *why* are in the
 > [Generated Project Guide → Repository settings](user-guide.md#repository-settings).
 
 From there, everything is a [poe](https://github.com/nat-n/poethepoet) task — `uv run poe lint`, `uv run poe test`,
