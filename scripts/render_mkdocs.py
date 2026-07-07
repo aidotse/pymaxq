@@ -22,9 +22,14 @@ REPLACEMENTS = {
 }
 
 # PyMaxQ's specific navigation tree, spliced in over the template's placeholder nav.
+# NB: "Generated Project Guide" surfaces the shipped docs/user-guide.md on PyMaxQ's own site
+# (labelled so it's clear it documents a *generated project*, not the template) -- it's the
+# single, self-contained source for end-user setup, so getting-started.md links to it instead
+# of duplicating the exhaustive per-platform steps.
 PYMAXQ_NAV = """nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Generated Project Guide: user-guide.md
   - Design & Philosophy: design.md
   - Developing the template: developing.md
   - Contributing: process.md

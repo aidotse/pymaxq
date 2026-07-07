@@ -150,6 +150,9 @@ You can preview the next changelog locally with `uv run poe changelog`.
 
 ## Repository settings
 
+> These are the one-time steps to get **your generated project** to a green first pipeline — do them in your repo's
+> hosting UI after the first push.
+
 A few settings live in the hosting platform's UI. Most importantly, **protect the default branch**: the
 `no-commit-to-branch` pre-commit hook only blocks direct commits *locally* (in each contributor's clone), so pair it
 with server-side protection that requires changes to land via a reviewed PR/MR — and allow the release automation to

@@ -59,15 +59,13 @@ _message_after_copy: |
     uv run pre-commit install    # after the 1st commit: once installed, no-commit-to-branch blocks commits on main
     git checkout -b feat/initial-setup   # branch off: main is protected by no-commit-to-branch
   {% if ci_platform in ['github', 'both'] %}
-  Before your first push, in your GitHub repo settings (details in the "Repository settings" docs):
-    - Protect the default branch, and let CI push the release bump back to it: add a RELEASE_TOKEN
-      secret (or grant github-actions[bot] a bypass) -- otherwise the release job cannot push.
-    - Enable Pages: Settings > Pages > Source: "GitHub Actions" -- otherwise the docs-deploy job fails.
+  Before your first push (GitHub) -- full steps in docs/user-guide.md ("Repository settings"):
+    - protect the default branch + add a RELEASE_TOKEN secret (or a github-actions[bot] bypass)
+    - enable Pages: Settings > Pages > Source: "GitHub Actions"
   {% endif %}
   {% if ci_platform in ['gitlab', 'both'] %}
-  Before your first push, in your GitLab project settings (details in the "Repository settings" docs):
-    - Add a CI_REPO_ACCESS token (Maintainer; read/write repository) and protect the default branch,
-      so CI can push the release bump back to it -- otherwise the release job cannot push.
+  Before your first push (GitLab) -- full steps in docs/user-guide.md ("Repository settings"):
+    - add a CI_REPO_ACCESS token (Maintainer; read/write) + protect the default branch
   {% endif %}
 # --- Questions -------------------------------------------------------------
 project_name:

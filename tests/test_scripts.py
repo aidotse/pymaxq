@@ -74,6 +74,9 @@ def test_render_mkdocs_nav_splice_actually_happens() -> None:
     # ...and the template's placeholder nav entries were spliced out.
     assert "API Reference: reference.md" not in out
     assert "Getting Started: user-guide.md" not in out
+    # user-guide.md is intentionally re-surfaced under PyMaxQ's own label (documents a generated
+    # project; getting-started.md links here instead of duplicating the exhaustive setup steps).
+    assert "Generated Project Guide: user-guide.md" in out
     # The following top-level key the splice depends on is preserved.
     assert "markdown_extensions:" in out
 
