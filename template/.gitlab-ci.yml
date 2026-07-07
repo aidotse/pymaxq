@@ -194,7 +194,7 @@ run-tests:
   # % from coverage.py's `coverage report` output. That badge is served by the GitLab instance
   # itself, so it renders on private/internal projects -- unlike the Pages-hosted badges, which
   # sit behind Pages access control and 404 when embedded as a README <img>.
-  coverage: '/(?i)total.*? (100(?:\.0+)?%|[1-9]?\d(?:\.\d+)?%)$/'
+  coverage: '/[Tt][Oo][Tt][Aa][Ll].*? (100(?:\.0+)?%|[1-9]?\d(?:\.\d+)?%)$/'
   artifacts:
     paths:
       - docs/exported/
