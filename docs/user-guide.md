@@ -212,9 +212,10 @@ Configure these under **Settings** for your project:
 
 - **General → Badges** (optional): add a `Pipeline` badge, using your GitLab instance host with the `%{project_path}`
     placeholder for the link and `%{project_path}/badges/%{default_branch}/pipeline.svg` for the image.
-- **Access Tokens**: create a project access token named `CI_REPO_ACCESS` with `read_repository` + `write_repository`
-    scopes and a `Maintainer` role (it must be able to push the version bump commit + tag to the protected default
-    branch).
+- **Access Tokens**: create a project access token named `CI_REPO_ACCESS` with the **`api`** scope and a `Maintainer`
+    role. The `api` scope is required (not just `write_repository`): the pipeline both pushes the version-bump commit +
+    tag to the protected default branch *and* creates the GitLab Release entry via the Releases API — the latter returns
+    `403 insufficient_scope` under a repository-only token.
 - **CI/CD → Variables**:
     - Add `CI_REPO_ACCESS` (the token value) as **masked** and **not protected**.
     - Add `GIT_SSL_CAINFO` (type **File**) with any SSL certificates required to reach GitLab.
