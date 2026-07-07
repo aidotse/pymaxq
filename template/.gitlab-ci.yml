@@ -190,6 +190,11 @@ run-tests:
   script:
     - uv run poe test 4
     - uv run poe export-test-artifacts --directory docs/exported
+  # Feed GitLab's native coverage badge (<repo>/badges/main/coverage.svg) by parsing the total
+  # % from coverage.py's `coverage report` output. That badge is served by the GitLab instance
+  # itself, so it renders on private/internal projects -- unlike the Pages-hosted badges, which
+  # sit behind Pages access control and 404 when embedded as a README <img>.
+  coverage: '/(?i)total.*? (100(?:\.0+)?%|[1-9]?\d(?:\.\d+)?%)$/'
   artifacts:
     paths:
       - docs/exported/

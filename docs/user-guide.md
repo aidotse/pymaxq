@@ -228,4 +228,9 @@ Configure these under **Settings** for your project:
     - *Docker image*: set variable `BUILD_DOCKER=true` to build and push to the project's built-in
         [container registry](https://docs.gitlab.com/ee/user/packages/container_registry/) via `CI_JOB_TOKEN`.
 - **Pages**: no UI toggle is needed — GitLab Pages is served by the pipeline's reserved `pages` job, which publishes the
-    `public/` directory. The single current version of the docs is served once that job runs on the default branch.
+    `public/` directory. The single current version of the docs is served once that job runs on the default branch. On a
+    **private/internal** project the Pages site sits behind Pages access control, so an embedded README `<img>` from the
+    Pages host (a different domain than your GitLab instance) can't authenticate and would 404. That is why the coverage
+    badge uses GitLab's native, repo-hosted `.../badges/<branch>/coverage.svg` (fed by the `run-tests` job's `coverage:`
+    regex) instead of a Pages-hosted SVG. To surface the Pages-hosted test/coverage reports publicly anyway, enable
+    **Settings → Deploy → Pages → make the Pages site public**.
