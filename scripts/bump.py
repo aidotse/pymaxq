@@ -6,8 +6,10 @@ the commit + tag, otherwise it records ``bumped=false`` so downstream release jo
 """
 
 import argparse
+import os
 import subprocess
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Literal
 
@@ -28,6 +30,21 @@ def release_decision(rc: int) -> Literal["bump", "skip", "fail"]:
     if rc in CZ_NO_RELEASE_CODES:
         return "skip"
     return "fail"
+
+
+def resolve_push_refspec(env: Mapping[str, str]) -> str:
+    """Build the git refspec for pushing the bump commit back to the default branch.
+
+    CI runners commonly check out a detached HEAD (GitLab always; GitHub for some events), so a
+    bare ``HEAD`` cannot be resolved to a remote branch and git fails with "not a full refname".
+    Resolve the branch name from the CI environment -- ``BRANCH`` (set by the GitHub workflow) or
+    ``CI_COMMIT_BRANCH`` / ``CI_DEFAULT_BRANCH`` (provided by GitLab) -- and return an explicit
+    ``HEAD:refs/heads/<branch>`` refspec, falling back to bare ``HEAD`` when no branch is known.
+
+    Pure function (env in, refspec out) so the resolution can be unit-tested.
+    """
+    branch = env.get("BRANCH") or env.get("CI_COMMIT_BRANCH") or env.get("CI_DEFAULT_BRANCH")
+    return f"HEAD:refs/heads/{branch}" if branch else "HEAD"
 
 
 def _explain_push_failure() -> None:
@@ -76,8 +93,9 @@ def main() -> None:
             f.write(f"version={version}\n")
 
         print(f"Pushing bump commit and tag {new_tag} to origin...")
+        src_refspec = resolve_push_refspec(os.environ)
         try:
-            subprocess.run(["git", "push", "origin", "HEAD"], check=True)
+            subprocess.run(["git", "push", "origin", src_refspec], check=True)
             subprocess.run(["git", "push", "origin", new_tag], check=True)
         except subprocess.CalledProcessError as exc:
             _explain_push_failure()

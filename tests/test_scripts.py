@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.bump import release_decision
+from scripts.bump import release_decision, resolve_push_refspec
 from scripts.render_gitignore import render_gitignore
 from scripts.render_mkdocs import render_mkdocs
 from scripts.render_precommit import render_precommit
@@ -123,3 +123,28 @@ def test_release_decision(rc: int, expected: str) -> None:
     """The cz-exit-code contract: 0 bumps, the no-eligible-commits codes skip cleanly, and
     every other code is a hard failure that must abort the release pipeline."""
     assert release_decision(rc) == expected
+
+
+# --- bump.resolve_push_refspec ----------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("env", "expected"),
+    [
+        # GitLab: detached HEAD -> CI_COMMIT_BRANCH gives the branch (the bug this fixes).
+        ({"CI_COMMIT_BRANCH": "main", "CI_DEFAULT_BRANCH": "main"}, "HEAD:refs/heads/main"),
+        # GitLab where only the default branch is exposed.
+        ({"CI_DEFAULT_BRANCH": "trunk"}, "HEAD:refs/heads/trunk"),
+        # GitHub: the workflow exports BRANCH, which takes precedence.
+        ({"BRANCH": "main", "CI_COMMIT_BRANCH": "ignored"}, "HEAD:refs/heads/main"),
+        # No branch anywhere (e.g. local run) -> bare HEAD fallback.
+        ({}, "HEAD"),
+        # Empty values must not win the `or` chain (they are falsy).
+        ({"BRANCH": "", "CI_COMMIT_BRANCH": "release"}, "HEAD:refs/heads/release"),
+    ],
+)
+def test_resolve_push_refspec(env: dict[str, str], expected: str) -> None:
+    """Resolve an explicit push refspec from CI env vars so a detached HEAD (GitLab always,
+    GitHub for some events) doesn't fail with 'not a full refname'. Precedence:
+    BRANCH (GitHub) > CI_COMMIT_BRANCH > CI_DEFAULT_BRANCH (GitLab), else bare HEAD."""
+    assert resolve_push_refspec(env) == expected
