@@ -58,7 +58,15 @@ _message_after_copy: |
     git commit -m "feat: initial project scaffold"   # feat -> cuts your first release (v0.1.0), deploying docs on push
     uv run pre-commit install    # after the 1st commit: once installed, no-commit-to-branch blocks commits on main
     git checkout -b feat/initial-setup   # branch off: main is protected by no-commit-to-branch
-
+  {% if ci_platform in ['github', 'both'] %}
+  Before your first push (GitHub) -- full steps in docs/user-guide.md ("Repository settings"):
+    - protect the default branch + add a RELEASE_TOKEN secret (or a github-actions[bot] bypass)
+    - enable Pages: Settings > Pages > Source: "GitHub Actions"
+  {% endif %}
+  {% if ci_platform in ['gitlab', 'both'] %}
+  Before your first push (GitLab) -- full steps in docs/user-guide.md ("Repository settings"):
+    - add a CI_REPO_ACCESS token (Maintainer; read/write) + protect the default branch
+  {% endif %}
 # --- Questions -------------------------------------------------------------
 project_name:
   type: str

@@ -18,9 +18,11 @@ The repository cleanly separates the template from the machinery used to develop
 So: to change the *generated project's* build config, edit `template/pyproject.toml.jinja`; the **root `pyproject.toml`
 is the template repo's own dev config** — different file, different purpose.
 
-The same split explains why `docs/user-guide.md` — copied into every generated project via a `copier.yml` `_tasks` entry
-— isn't listed in this repo's own mkdocs `nav:` (see `mkdocs.yaml`): it's written for end users of a *generated*
-project, not for readers of PyMaxQ's own docs site, so it would be out of place here.
+The same split explains how `docs/user-guide.md` is treated — it's copied into every generated project via a
+`copier.yml` `_tasks` entry and is written for end users of a *generated* project, not for readers of PyMaxQ's own docs
+site. It's the single, self-contained source for end-user setup (Repository settings, publishing, etc.), so PyMaxQ's own
+site surfaces it under a clearly-labelled **Generated Project Guide** nav entry (see `PYMAXQ_NAV` in
+`scripts/render_mkdocs.py`) rather than duplicating those steps into `getting-started.md`, which links to it instead.
 
 ## Dogfooded toolchain
 

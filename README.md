@@ -28,6 +28,11 @@ uv run pre-commit install                        # enable hooks *after* the firs
 git checkout -b feat/initial-setup               # main is protected; do further work on branches
 ```
 
+> **Before your first release (one-time):** in your host's settings, protect the default branch and add the CI
+> release-push credential (GitHub `RELEASE_TOKEN` / GitLab `CI_REPO_ACCESS`), and — on GitHub — enable Pages. Without
+> these, the first pipeline run fails. Full per-platform steps:
+> [Generated Project Guide → Repository settings](https://aidotse.github.io/pymaxq/user-guide/#repository-settings).
+
 Copier prompts for the project name, package name, description, author, namespace, and`ci_platform` (`github` default /
 `gitlab` / `both`), then renders accordingly. See [Getting Started](https://aidotse.github.io/pymaxq/getting-started/)
 for details.
