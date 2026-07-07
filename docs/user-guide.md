@@ -155,11 +155,15 @@ You can preview the next changelog locally with `uv run poe changelog`.
 
 A few settings live in the hosting platform's UI. Most importantly, **protect the default branch**: the
 `no-commit-to-branch` pre-commit hook only blocks direct commits *locally* (in each contributor's clone), so pair it
-with server-side protection that requires changes to land via a reviewed PR/MR. That same protection is *also* what
-blocks the release automation from pushing the version bump, so you then have to give CI a way past it (a release-push
-credential or a CI-actor bypass — per-platform notes below). The two go together: skip branch protection and the default
-CI token pushes the release on its own with no extra credential — but then `main` isn't protected, which defeats the
-reviewed-PR workflow this template is built around.
+with server-side protection that requires changes to land via a reviewed PR/MR. The release automation then needs a way
+to push the version bump, and **how that plays out differs by platform** (details in the per-platform notes below):
+
+- **GitHub** — the credential is *conditional on protection*. Leave the default branch unprotected and the built-in
+    token pushes the release itself with no extra credential (but then `main` isn't protected, defeating the reviewed-PR
+    workflow); protect it and you must add a `RELEASE_TOKEN` or a `github-actions[bot]` bypass so the bump can land.
+- **GitLab** — the credential is *required either way*. The pipeline authenticates the push as `oauth2:$CI_REPO_ACCESS`
+    (the built-in `CI_JOB_TOKEN` can't push commits back), and GitLab protects the default branch out of the box, so
+    `CI_REPO_ACCESS` is not optional.
 
 ### Enable Automatic Dependency Updates
 

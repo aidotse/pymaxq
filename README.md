@@ -29,10 +29,12 @@ git checkout -b feat/initial-setup               # main is protected; do further
 ```
 
 > **Before your first release (one-time):** on GitHub, enable Pages (**Settings → Pages → Source: "GitHub Actions"**) —
-> the docs-deploy job fails without it. And once you protect the default branch (recommended — the shipped
-> `no-commit-to-branch` hook and PR workflow assume it), give CI a way to push the release commit past that protection:
-> a `RELEASE_TOKEN` secret / GitLab `CI_REPO_ACCESS`, or a `github-actions[bot]` bypass. (Leave `main` unprotected and
-> the default CI token pushes the release itself — but then it isn't protected.) Full per-platform steps:
+> the docs-deploy job fails without it. For the release push, the platforms differ: on **GitHub**, once you protect the
+> default branch (recommended — the shipped `no-commit-to-branch` hook and PR workflow assume it), give CI a way past
+> that protection — a `RELEASE_TOKEN` secret or a `github-actions[bot]` bypass (leave `main` unprotected and the default
+> token pushes the release itself, but then it isn't protected). On **GitLab**, a `CI_REPO_ACCESS` token is required
+> either way — the pipeline authenticates the push with it, and the default branch is protected out of the box. Full
+> per-platform steps:
 > [Generated Project Guide → Repository settings](https://aidotse.github.io/pymaxq/user-guide/#repository-settings).
 
 Copier prompts for the project name, package name, description, author, namespace, and`ci_platform` (`github` default /

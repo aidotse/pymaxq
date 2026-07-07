@@ -51,11 +51,12 @@ git checkout -b feat/initial-setup               # branch off: main is protected
 > a `chore:`/`docs:` message would produce no release, leaving the docs site and badges empty until your first feature.
 
 > **Before your first release — one-time setup.** In your host's UI: **(1)** on GitHub, enable Pages (**Settings → Pages
-> → Source: "GitHub Actions"**), or the docs-deploy job fails; and **(2)** once you protect the default branch
-> (recommended — the shipped `no-commit-to-branch` hook and PR workflow assume it), give CI a way to push the release
-> commit past that protection — a release-push credential (GitHub `RELEASE_TOKEN`, or a `github-actions[bot]` bypass;
-> GitLab `CI_REPO_ACCESS`). Leave `main` unprotected and the default CI token pushes the release itself, but then it
-> isn't protected. The full per-platform steps and the *why* are in the
+> → Source: "GitHub Actions"**), or the docs-deploy job fails; and **(2)** give CI a way to push the release commit —
+> and here the platforms differ. On **GitHub**, once you protect the default branch (recommended — the shipped
+> `no-commit-to-branch` hook and PR workflow assume it), add a release-push credential (`RELEASE_TOKEN`, or a
+> `github-actions[bot]` bypass); leave `main` unprotected and the default token pushes the release itself, but then it
+> isn't protected. On **GitLab**, a `CI_REPO_ACCESS` token is required regardless — the pipeline authenticates the push
+> with it, and the default branch is protected out of the box. The full per-platform steps and the *why* are in the
 > [Generated Project Guide → Repository settings](user-guide.md#repository-settings).
 
 From there, everything is a [poe](https://github.com/nat-n/poethepoet) task — `uv run poe lint`, `uv run poe test`,
