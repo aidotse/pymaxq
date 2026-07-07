@@ -14,8 +14,10 @@ payload a generated project replaces. Rationale → `docs/design.md`. Full contr
     stripped); everything else copies verbatim. `template/{{ package_name }}/` is renamed to the user's package. Don't
     delete `template/{{ _copier_conf.answers_file }}.jinja` (enables `copier update`).
 - Same root-vs-`template/` split applies to `pyproject.toml`, `.pre-commit-config.yaml`, `mkdocs.yaml`, `.gitignore` —
-    editing the wrong one is a silent no-op. Which direction each syncs, and how `poe sync` + CI's `enforce-sync` job
-    keep them from drifting → "Configuration Synchronization" in `docs/developing.md`.
+    editing the wrong one is a silent no-op. Only `.pre-commit-config.yaml`/`mkdocs.yaml`/`.gitignore` **auto-sync**
+    (template → root via `poe sync`, CI-enforced by `enforce-sync`). **`pyproject.toml` does NOT** — root and
+    `template/pyproject.toml.jinja` are independent, hand-maintained files, so a change meant for both must be made in
+    both. Which direction each syncs → "Configuration Synchronization" in `docs/developing.md`.
 
 ## Docs: two audiences
 
