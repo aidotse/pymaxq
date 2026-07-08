@@ -132,16 +132,26 @@ gitlab_host:
   default: gitlab.com
   when: "{{ ci_platform == 'gitlab' }}"
 
-# --- Computed (not prompted): repo + docs base URLs, branched on the CI platform -------
+# --- Repo + docs base URLs: prompted, defaults branched on the CI platform -------------
+# These DEFAULT to `<host>/<group>/<project_name>` (and the matching Pages host), but are
+# prompted (and stored in .copier-answers.yml) so you can override them when your REMOTE
+# repository path differs from your project name. If they don't match the actual remote,
+# every generated URL -- badges, repo/docs links, pyproject metadata, mkdocs -- silently
+# points at the wrong project. Just press Enter to accept the default when they match.
+#
 # `group` is the GitHub owner/org OR the GitLab group. GitHub is the primary host: for 'both'
 # the canonical repo/docs URLs point to GitHub (the GitLab pipeline still runs as a mirror).
 # Only a gitlab-only generation uses the internal GitLab/Pages hosts.
 repo_url:
   type: str
-  when: false
+  help: >-
+    Repository base URL. Defaults to <host>/<group>/<project_name>; override if the remote
+    repo path differs from the project name (else badges + links point at the wrong project).
   default: "{% if ci_platform in ['github', 'both'] %}https://github.com/{{ group }}/{{ project_name }}{% else %}https://{{ gitlab_host }}/{{ group }}/{{ project_name }}{% endif %}"
 
 docs_url:
   type: str
-  when: false
+  help: >-
+    Docs site (Pages) base URL. Defaults are derived from <group>/<project_name>; override
+    if your remote/Pages path differs.
   default: "{% if ci_platform in ['github', 'both'] %}https://{{ group }}.github.io/{{ project_name }}{% else %}{% if gitlab_host == 'gitlab.com' %}https://{{ group }}.gitlab.io/{{ project_name }}{% else %}https://{{ gitlab_host | replace('gitlab.', 'pages.') }}/{{ group }}/{{ project_name }}{% endif %}{% endif %}"
