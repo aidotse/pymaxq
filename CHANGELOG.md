@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 This file is managed by [Commitizen](https://commitizen-tools.github.io/commitizen/) and is updated automatically on
 each `poe bump` (driven by [Conventional Commits](https://www.conventionalcommits.org/)). Do not edit it by hand.
 
+## v0.3.0 (2026-07-08)
+
+### Feat
+
+- make repo_url/docs_url overridable prompts
+
+### Fix
+
+- ignore skipped pipelines in GitLab pipeline badge
+
 ## v0.2.8 (2026-07-07)
 
 ### Fix
