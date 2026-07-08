@@ -16,19 +16,25 @@ copier copy --trust https://github.com/aidotse/pymaxq path/to/my-project
 
 Copier asks a short set of questions and renders the template accordingly:
 
-| Prompt             | Meaning                                                                                  |
-| ------------------ | ---------------------------------------------------------------------------------------- |
-| `project_name`     | Project slug (lowercase, hyphens), e.g. `my-awesome-project`. Used in repo/docs URLs.    |
-| `package_name`     | Importable package name (defaults to the slug with underscores).                         |
-| `description`      | One-line description.                                                                    |
-| `author` / `email` | Author name and email.                                                                   |
-| `group`            | The namespace the repo lives under — GitHub owner/org **or** GitLab group.               |
-| `ci_platform`      | `github` (default), `gitlab`, or `both`.                                                 |
-| `gitlab_host`      | GitLab instance host (self-hosted or `gitlab.com`); only asked for GitLab-only projects. |
+| Prompt                  | Meaning                                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `project_name`          | Project slug (lowercase, hyphens), e.g. `my-awesome-project`. Used in repo/docs URLs.                                                                                                 |
+| `package_name`          | Importable package name (defaults to the slug with underscores).                                                                                                                      |
+| `description`           | One-line description.                                                                                                                                                                 |
+| `author` / `email`      | Author name and email.                                                                                                                                                                |
+| `group`                 | The namespace the repo lives under — GitHub owner/org **or** GitLab group.                                                                                                            |
+| `ci_platform`           | `github` (default), `gitlab`, or `both`.                                                                                                                                              |
+| `gitlab_host`           | GitLab instance host (self-hosted or `gitlab.com`); only asked for GitLab-only projects.                                                                                              |
+| `repo_url` / `docs_url` | Repository and docs-site (Pages) base URLs. Default to `<host>/<group>/<project_name>`; press Enter to accept, or **override if the remote repo path differs from the project name**. |
 
 **GitHub is the primary host.** With `github` or `both`, the generated repo/docs URLs and the CI-status badge point at
 GitHub; a GitLab-only project uses the GitLab equivalents. For `both`, GitHub is canonical and the GitLab pipeline runs
 as a mirror.
+
+> **Match the remote path.** `repo_url`/`docs_url` default to `<host>/<group>/<project_name>`, so they only resolve
+> correctly when your **remote repository's path** is `group/project_name`. If you create the remote under a different
+> name, either rename its path to match or override `repo_url`/`docs_url` at these prompts — otherwise every generated
+> URL (badges, links, `pyproject` metadata, mkdocs) silently points at another project.
 
 ## Set it up
 
