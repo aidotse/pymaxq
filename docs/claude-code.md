@@ -124,3 +124,34 @@ tooling, not part of Claude Code, and entirely optional** — none of the practi
 If you adopt them, you launch Claude wrapped in the proxy (e.g. `uv run headroom wrap claude`). Headroom's own examples
 run its proxy on port `8787`, and a `headroom dashboard` command opens a live view of your token savings, globally,
 per-project, and per-session.
+
+**What happens here:**
+
+1. Headroom boots up its silent proxy server.
+1. Claude Code launches and reads the global settings.
+1. The RTK hook automatically routes all AI-triggered Bash commands through the Rust compressor.
+
+### Install & initialize Headroom AI (project-scoped)
+
+We use `uv` to manage Headroom as a development dependency. Add it to the project (if not listed as a dependency
+already). The key token compression routines for Claude are in `proxy` and `code` :
+
+```bash
+uv add --dev "headroom-ai[proxy,code]"
+```
+
+### Install & initialize RTK (global)
+
+RTK must be installed globally to hook into Claude's master configuration. Install via the official script:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+```
+
+Bind RTK to Claude Code's global settings:
+
+```bash
+rtk init -g
+```
+
+When prompted to **Patch existing settings.json?**, type `y` and press Enter. This safely injects the tool interceptor.
